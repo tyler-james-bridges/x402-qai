@@ -51,7 +51,7 @@ export function formatText(result: ScanResult): string {
   const lines: string[] = [];
 
   lines.push('');
-  lines.push(`${BOLD}x402-scan report${RESET}`);
+  lines.push(`${BOLD}x402-qai report${RESET}`);
   lines.push(`${DIM}URL: ${result.url}${RESET}`);
   lines.push(`${DIM}Time: ${result.timestamp}${RESET}`);
   lines.push('');

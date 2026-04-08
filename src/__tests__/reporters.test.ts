@@ -153,10 +153,10 @@ describe('formatText', () => {
     expect(output).toContain('FAIL');
   });
 
-  it('includes x402-scan report header', () => {
+  it('includes x402-qai report header', () => {
     const result = makeScanResult();
     const output = formatText(result);
-    expect(output).toContain('x402-scan report');
+    expect(output).toContain('x402-qai report');
   });
 
   it('includes Score Breakdown section', () => {

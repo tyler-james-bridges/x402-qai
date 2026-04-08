@@ -4,7 +4,7 @@ import { Command } from 'commander';
 function buildProgram(): Command {
   const program = new Command();
   program
-    .name('x402-scan')
+    .name('x402-qai')
     .description('Test x402 endpoints before your users do.')
     .version('0.1.0')
     .argument('[url]', 'URL of the x402 endpoint to scan')
@@ -20,55 +20,55 @@ function buildProgram(): Command {
 describe('CLI argument parsing', () => {
   it('parses a URL positional argument', () => {
     const program = buildProgram();
-    program.parse(['node', 'x402-scan', 'https://example.com/api']);
+    program.parse(['node', 'x402-qai', 'https://example.com/api']);
     expect(program.args[0]).toBe('https://example.com/api');
   });
 
   it('parses --pay flag', () => {
     const program = buildProgram();
-    program.parse(['node', 'x402-scan', 'https://example.com', '--pay']);
+    program.parse(['node', 'x402-qai', 'https://example.com', '--pay']);
     expect(program.opts().pay).toBe(true);
   });
 
   it('defaults --pay to false', () => {
     const program = buildProgram();
-    program.parse(['node', 'x402-scan', 'https://example.com']);
+    program.parse(['node', 'x402-qai', 'https://example.com']);
     expect(program.opts().pay).toBe(false);
   });
 
   it('parses --json flag', () => {
     const program = buildProgram();
-    program.parse(['node', 'x402-scan', 'https://example.com', '--json']);
+    program.parse(['node', 'x402-qai', 'https://example.com', '--json']);
     expect(program.opts().json).toBe(true);
   });
 
   it('parses --ci flag', () => {
     const program = buildProgram();
-    program.parse(['node', 'x402-scan', 'https://example.com', '--ci']);
+    program.parse(['node', 'x402-qai', 'https://example.com', '--ci']);
     expect(program.opts().ci).toBe(true);
   });
 
   it('parses --max-amount with value', () => {
     const program = buildProgram();
-    program.parse(['node', 'x402-scan', 'https://example.com', '--max-amount', '0.05']);
+    program.parse(['node', 'x402-qai', 'https://example.com', '--max-amount', '0.05']);
     expect(program.opts().maxAmount).toBe('0.05');
   });
 
   it('parses --timeout with value', () => {
     const program = buildProgram();
-    program.parse(['node', 'x402-scan', 'https://example.com', '--timeout', '5000']);
+    program.parse(['node', 'x402-qai', 'https://example.com', '--timeout', '5000']);
     expect(program.opts().timeout).toBe('5000');
   });
 
   it('defaults --timeout to 10000', () => {
     const program = buildProgram();
-    program.parse(['node', 'x402-scan', 'https://example.com']);
+    program.parse(['node', 'x402-qai', 'https://example.com']);
     expect(program.opts().timeout).toBe('10000');
   });
 
   it('parses --file with path', () => {
     const program = buildProgram();
-    program.parse(['node', 'x402-scan', '--file', 'urls.txt']);
+    program.parse(['node', 'x402-qai', '--file', 'urls.txt']);
     expect(program.opts().file).toBe('urls.txt');
   });
 
@@ -76,7 +76,7 @@ describe('CLI argument parsing', () => {
     const program = buildProgram();
     program.parse([
       'node',
-      'x402-scan',
+      'x402-qai',
       'https://example.com',
       '--pay',
       '--json',

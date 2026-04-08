@@ -10,7 +10,7 @@ import type { ScanOptions, ReportFormat } from './types.js';
 const program = new Command();
 
 program
-  .name('x402-scan')
+  .name('x402-qai')
   .description('Test x402 endpoints before your users do.')
   .version('0.1.0')
   .argument('[url]', 'URL of the x402 endpoint to scan')

@@ -1,4 +1,4 @@
-# x402-scan
+# x402-qai
 
 x402 endpoint compliance scanner and payment-flow validator.
 
