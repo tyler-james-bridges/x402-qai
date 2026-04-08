@@ -1,0 +1,39 @@
+{
+  "name": "x402-scan",
+  "version": "0.1.0",
+  "description": "Test x402 endpoints before your users do.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "x402-scan": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint src/",
+    "format:check": "prettier --check 'src/**/*.ts'",
+    "format": "prettier --write 'src/**/*.ts'",
+    "test": "node --experimental-vm-modules node_modules/.bin/vitest run",
+    "test:watch": "node --experimental-vm-modules node_modules/.bin/vitest"
+  },
+  "keywords": [
+    "x402",
+    "payments",
+    "compliance",
+    "scanner",
+    "validator"
+  ],
+  "author": "Tyler James-Bridges",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "commander": "^14.0.3",
+    "eslint": "^10.2.0",
+    "prettier": "^3.8.1",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.3",
+    "zod": "^4.3.6"
+  }
+}
