@@ -46,7 +46,20 @@ describe('scan', () => {
     expect(result.errors).toEqual([]);
   });
 
-  it('fails when endpoint returns 200 instead of 402', async () => {
+  it('passes when endpoint returns 200 with valid discovery payload', async () => {
+    mockedSendDiscovery.mockResolvedValue({
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+      body: validPayload(),
+    });
+
+    const result = await scan('https://example.com/api', defaultOptions);
+    expect(result.passed).toBe(true);
+    const statusRule = result.rules.find((r) => r.id === 'discovery.status-402');
+    expect(statusRule?.passed).toBe(true);
+  });
+
+  it('fails when endpoint returns 200 with no discovery payload', async () => {
     mockedSendDiscovery.mockResolvedValue({
       status: 200,
       headers: {},
@@ -55,8 +68,6 @@ describe('scan', () => {
 
     const result = await scan('https://example.com/api', defaultOptions);
     expect(result.passed).toBe(false);
-    const statusRule = result.rules.find((r) => r.id === 'discovery.status-402');
-    expect(statusRule?.passed).toBe(false);
   });
 
   it('handles network errors gracefully', async () => {

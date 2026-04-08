@@ -4,22 +4,25 @@ import type { Rule, ScanContext } from './engine.js';
 
 const status402: Rule = {
   id: 'discovery.status-402',
-  title: 'Response returns 402 status',
+  title: 'Response returns valid x402 status',
   severity: 'error',
   category: 'discovery',
   check(context: ScanContext): RuleResult {
-    const passed = context.response.status === 402;
+    // Accept 402 (payment challenge) or 200 (discovery info endpoint)
+    const passed = context.response.status === 402 || context.response.status === 200;
     return {
       id: this.id,
       title: this.title,
       severity: this.severity,
       passed,
       message: passed
-        ? 'Endpoint correctly returns 402 Payment Required'
-        : `Expected status 402, got ${context.response.status}`,
+        ? context.response.status === 402
+          ? 'Endpoint correctly returns 402 Payment Required'
+          : 'Endpoint returns 200 with x402 discovery info'
+        : `Expected status 402 or 200, got ${context.response.status}`,
       suggestion: passed
         ? undefined
-        : 'Ensure the endpoint returns HTTP 402 when no payment header is provided',
+        : 'Endpoint should return 402 Payment Required for payment challenges, or 200 with discovery payload for info endpoints',
     };
   },
 };
@@ -59,11 +62,13 @@ const payloadValid: Rule = {
         severity: this.severity,
         passed: false,
         message: 'Response body is not valid JSON or not an object',
-        suggestion: 'Return a valid JSON object in the 402 response body',
+        suggestion: 'Return a valid JSON object in the response body',
       };
     }
 
-    const result = DiscoveryPayloadSchema.safeParse(context.bodyJson);
+    // Validate the extracted discovery payload if available, otherwise try raw body
+    const candidate = context.discovery ?? context.bodyJson;
+    const result = DiscoveryPayloadSchema.safeParse(candidate);
     if (result.success) {
       return {
         id: this.id,

@@ -27,10 +27,17 @@ describe('parseDiscoveryResponse', () => {
     expect(result.payload?.amount).toBe('0.01');
   });
 
-  it('returns error for non-402 status', () => {
+  it('accepts 200 status with valid discovery payload', () => {
     const result = parseDiscoveryResponse(makeResponse({ status: 200 }));
+    expect(result.errors).toEqual([]);
+    expect(result.payload).not.toBeNull();
+    expect(result.payload?.scheme).toBe('exact');
+  });
+
+  it('returns error for non-402/200 status', () => {
+    const result = parseDiscoveryResponse(makeResponse({ status: 500 }));
     expect(result.payload).toBeNull();
-    expect(result.errors[0]).toContain('Expected status 402');
+    expect(result.errors[0]).toContain('Expected status 402 or 200');
   });
 
   it('returns error for invalid JSON body', () => {

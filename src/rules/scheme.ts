@@ -10,6 +10,20 @@ const KNOWN_NETWORKS = new Set([
   'arbitrum',
   'polygon',
   'solana',
+  'abstract',
+]);
+
+// CAIP-2 chain ID mappings for EVM networks
+const CAIP2_NETWORKS = new Map([
+  ['eip155:1', 'ethereum'],
+  ['eip155:10', 'optimism'],
+  ['eip155:137', 'polygon'],
+  ['eip155:8453', 'base'],
+  ['eip155:84532', 'base-sepolia'],
+  ['eip155:42161', 'arbitrum'],
+  ['eip155:2741', 'abstract'],
+  ['eip155:11124', 'abstract-testnet'],
+  ['eip155:11155111', 'sepolia'],
 ]);
 
 const supportedDeclared: Rule = {
@@ -62,7 +76,8 @@ const networkValid: Rule = {
     }
 
     const network = context.discovery.network.toLowerCase();
-    const passed = KNOWN_NETWORKS.has(network);
+    // Check both plain names and CAIP-2 identifiers
+    const passed = KNOWN_NETWORKS.has(network) || CAIP2_NETWORKS.has(network);
     return {
       id: this.id,
       title: this.title,

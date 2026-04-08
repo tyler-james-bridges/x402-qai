@@ -7,11 +7,12 @@ export interface DiscoveryResult {
 }
 
 export function parseDiscoveryResponse(response: HttpResponse): DiscoveryResult {
-  if (response.status !== 402) {
+  // Accept both 402 (payment challenge) and 200 (discovery info endpoint)
+  if (response.status !== 402 && response.status !== 200) {
     return {
       payload: null,
       errors: [
-        `Expected status 402 but got ${response.status}. Endpoint must return 402 Payment Required for unauthenticated requests.`,
+        `Expected status 402 or 200 but got ${response.status}. Endpoint must return 402 Payment Required for payment challenges or 200 for discovery endpoints.`,
       ],
     };
   }
@@ -60,14 +61,24 @@ function extractCandidate(parsed: unknown): unknown | null {
 
   const obj = parsed as Record<string, unknown>;
 
-  // Direct payload at top level
+  // Direct payload at top level (flat x402 format)
   if ('x402Version' in obj && 'scheme' in obj) {
     return obj;
   }
 
-  // Nested under "accepts" array (common x402 pattern)
+  // x402 v2 format: accepts array with payment requirements
+  // Parent has x402Version, resource, etc. Each accepts entry has scheme, network, asset, amount, payTo
   if (Array.isArray(obj.accepts) && obj.accepts.length > 0) {
-    return obj.accepts[0];
+    const first = obj.accepts[0] as Record<string, unknown>;
+    // Merge parent-level x402Version into the accepts entry
+    return {
+      ...first,
+      x402Version: obj.x402Version ?? first.x402Version,
+      resource:
+        typeof obj.resource === 'object' && obj.resource !== null
+          ? (obj.resource as Record<string, unknown>).url ?? JSON.stringify(obj.resource)
+          : (obj.resource ?? first.resource),
+    };
   }
 
   return null;

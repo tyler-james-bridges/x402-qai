@@ -51,10 +51,9 @@ describe('discovery.status-402', () => {
     expect(result.passed).toBe(true);
   });
 
-  it('fails when status is 200', () => {
+  it('passes when status is 200 (discovery info endpoint)', () => {
     const result = rule.check(makeContext({ response: { status: 200, headers: {}, body: '' } }));
-    expect(result.passed).toBe(false);
-    expect(result.message).toContain('200');
+    expect(result.passed).toBe(true);
   });
 
   it('fails when status is 500', () => {
@@ -97,8 +96,8 @@ describe('discovery.payload-valid', () => {
     expect(result.passed).toBe(false);
   });
 
-  it('fails when schema validation fails', () => {
-    const result = rule.check(makeContext({ bodyJson: { x402Version: -1 } }));
+  it('fails when schema validation fails with no valid discovery', () => {
+    const result = rule.check(makeContext({ discovery: null, bodyJson: { x402Version: -1 } }));
     expect(result.passed).toBe(false);
     expect(result.message).toContain('Schema validation failed');
   });
