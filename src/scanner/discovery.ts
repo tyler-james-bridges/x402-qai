@@ -76,7 +76,7 @@ function extractCandidate(parsed: unknown): unknown | null {
       x402Version: obj.x402Version ?? first.x402Version,
       resource:
         typeof obj.resource === 'object' && obj.resource !== null
-          ? (obj.resource as Record<string, unknown>).url ?? JSON.stringify(obj.resource)
+          ? ((obj.resource as Record<string, unknown>).url ?? JSON.stringify(obj.resource))
           : (obj.resource ?? first.resource),
     };
   }

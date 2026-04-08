@@ -7,14 +7,28 @@
   "bin": {
     "x402-qai": "dist/cli.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "lint": "eslint src/",
     "format:check": "prettier --check 'src/**/*.ts'",
     "format": "prettier --write 'src/**/*.ts'",
     "test": "node --experimental-vm-modules node_modules/.bin/vitest run",
-    "test:watch": "node --experimental-vm-modules node_modules/.bin/vitest"
+    "test:watch": "node --experimental-vm-modules node_modules/.bin/vitest",
+    "prepublishOnly": "npm run lint && npm run format:check && npm test && npm run build"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tyler-james-bridges/x402-qai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tyler-james-bridges/x402-qai/issues"
+  },
+  "homepage": "https://github.com/tyler-james-bridges/x402-qai#readme",
   "keywords": [
     "x402",
     "payments",

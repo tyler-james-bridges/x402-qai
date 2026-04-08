@@ -87,3 +87,37 @@ export function formatText(result: ScanResult): string {
 
   return lines.join('\n');
 }
+
+export function formatBatchTextReport(results: ScanResult[], threshold?: number): string {
+  const lines: string[] = [];
+
+  for (const result of results) {
+    lines.push(formatText(result));
+  }
+
+  // Batch summary
+  lines.push(`${BOLD}Batch Summary${RESET}`);
+  lines.push('');
+
+  const passedCount = results.filter((r) => {
+    if (threshold !== undefined) return r.score.total >= threshold;
+    return r.passed;
+  }).length;
+
+  for (const result of results) {
+    const didPass = threshold !== undefined ? result.score.total >= threshold : result.passed;
+    const icon = didPass ? `${GREEN}PASS${RESET}` : `${RED}FAIL${RESET}`;
+    lines.push(`  ${icon}  ${result.score.total}/100  ${result.url}`);
+  }
+
+  const avg =
+    results.length > 0
+      ? Math.round(results.reduce((sum, r) => sum + r.score.total, 0) / results.length)
+      : 0;
+
+  lines.push('');
+  lines.push(`${BOLD}${passedCount}/${results.length} passed, average score: ${avg}/100${RESET}`);
+  lines.push('');
+
+  return lines.join('\n');
+}

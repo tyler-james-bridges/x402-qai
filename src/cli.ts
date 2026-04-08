@@ -3,8 +3,9 @@
 import { Command } from 'commander';
 import { readFileSync } from 'fs';
 import { scan } from './index.js';
-import { formatText } from './reporters/text.js';
-import { formatJson } from './reporters/json.js';
+import { scanBatch } from './batch.js';
+import { formatText, formatBatchTextReport } from './reporters/text.js';
+import { formatJson, formatBatchJsonReport } from './reporters/json.js';
 import type { ScanOptions, ReportFormat } from './types.js';
 
 const program = new Command();
@@ -16,7 +17,8 @@ program
   .argument('[url]', 'URL of the x402 endpoint to scan')
   .option('--pay', 'enable live payment flow testing', false)
   .option('--json', 'output machine-readable JSON')
-  .option('--ci', 'strict mode: exit 1 on score < 70')
+  .option('--ci', 'strict mode: exit 1 on score below threshold')
+  .option('--threshold <n>', 'score threshold for --ci mode (default 70)', '70')
   .option('--max-amount <n>', 'maximum payment amount (e.g. 0.01)')
   .option('--file <path>', 'file containing URLs to scan (one per line)')
   .option('--timeout <ms>', 'request timeout in milliseconds', '10000')
@@ -29,7 +31,7 @@ program
     }
 
     const format: ReportFormat = opts.json ? 'json' : 'text';
-    const threshold = opts.ci ? 70 : undefined;
+    const threshold = opts.ci ? Number(opts.threshold) : undefined;
 
     const scanOptions: ScanOptions = {
       pay: Boolean(opts.pay),
@@ -39,28 +41,39 @@ program
       threshold,
     };
 
-    let worstExit = 0;
+    const isBatch = urls.length > 1;
 
-    for (const target of urls) {
+    if (isBatch) {
+      const results = await scanBatch(urls, scanOptions);
+      const output =
+        format === 'json'
+          ? formatBatchJsonReport(results)
+          : formatBatchTextReport(results, threshold);
+      console.log(output);
+
+      const failed = results.some((r) => {
+        if (threshold !== undefined) return r.score.total < threshold;
+        return !r.passed;
+      });
+      process.exit(failed ? 1 : 0);
+    } else {
       try {
         const startTime = Date.now();
-        const result = await scan(target, scanOptions);
+        const result = await scan(urls[0], scanOptions);
         const output = format === 'json' ? formatJson(result, startTime) : formatText(result);
         console.log(output);
 
         if (threshold !== undefined && result.score.total < threshold) {
-          worstExit = Math.max(worstExit, 1);
+          process.exit(1);
         } else if (!result.passed) {
-          worstExit = Math.max(worstExit, 1);
+          process.exit(1);
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.error(`Error scanning ${target}: ${msg}`);
-        worstExit = 2;
+        console.error(`Error scanning ${urls[0]}: ${msg}`);
+        process.exit(2);
       }
     }
-
-    process.exit(worstExit);
   });
 
 function collectUrls(positional: string | undefined, filePath: string | undefined): string[] {

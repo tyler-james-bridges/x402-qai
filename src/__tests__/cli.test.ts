@@ -13,7 +13,8 @@ function buildProgram(): Command {
     .option('--ci', 'strict mode: exit 1 on score < 70')
     .option('--max-amount <n>', 'maximum payment amount (e.g. 0.01)')
     .option('--file <path>', 'file containing URLs to scan (one per line)')
-    .option('--timeout <ms>', 'request timeout in milliseconds', '10000');
+    .option('--timeout <ms>', 'request timeout in milliseconds', '10000')
+    .option('--threshold <n>', 'score threshold for --ci mode (default 70)', '70');
   return program;
 }
 
@@ -70,6 +71,18 @@ describe('CLI argument parsing', () => {
     const program = buildProgram();
     program.parse(['node', 'x402-qai', '--file', 'urls.txt']);
     expect(program.opts().file).toBe('urls.txt');
+  });
+
+  it('parses --threshold with value', () => {
+    const program = buildProgram();
+    program.parse(['node', 'x402-qai', 'https://example.com', '--ci', '--threshold', '80']);
+    expect(program.opts().threshold).toBe('80');
+  });
+
+  it('defaults --threshold to 70', () => {
+    const program = buildProgram();
+    program.parse(['node', 'x402-qai', 'https://example.com']);
+    expect(program.opts().threshold).toBe('70');
   });
 
   it('parses multiple flags together', () => {
