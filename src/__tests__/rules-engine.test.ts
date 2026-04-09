@@ -10,6 +10,7 @@ function makeContext(overrides?: Partial<ScanContext>): ScanContext {
       status: 402,
       headers: { 'content-type': 'application/json' },
       body: '{}',
+      responseTimeMs: 100,
     },
     discovery: null,
     bodyJson: {},

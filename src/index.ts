@@ -2,6 +2,7 @@ import { sendDiscoveryRequest } from './scanner/http.js';
 import { parseDiscoveryResponse } from './scanner/discovery.js';
 import { runPaymentFlow } from './scanner/payment.js';
 import { allRules, runRules, calculateScore } from './rules/index.js';
+import { checkFacilitatorReachable } from './rules/facilitator.js';
 import type { ScanContext } from './rules/engine.js';
 import type {
   ScanOptions,
@@ -14,14 +15,29 @@ import type {
 export async function scan(url: string, options: ScanOptions): Promise<ScanResult> {
   const errors: string[] = [];
 
-  // Step 1: Discovery request
-  let response;
-  try {
-    response = await sendDiscoveryRequest(url, options.timeout);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown network error';
-    errors.push(`Network error: ${message}`);
+  // Step 1: Discovery request (no longer throws on network errors)
+  const response = await sendDiscoveryRequest(url, options.timeout);
+
+  // Check for network-level errors
+  if (response.error) {
+    errors.push(response.error);
     return buildResult(url, [], null, undefined, errors);
+  }
+
+  // Check for rate limiting
+  if (response.status === 429) {
+    const retryAfter = response.headers['retry-after'];
+    const retryMsg = retryAfter ? ` Retry after ${retryAfter} seconds.` : '';
+    errors.push(`Rate limited by server (429 Too Many Requests).${retryMsg}`);
+    return buildResult(url, [], null, undefined, errors);
+  }
+
+  // Detect HTML responses when JSON is expected
+  const ct = response.headers['content-type'] ?? '';
+  if (ct.includes('text/html') && !ct.includes('application/json')) {
+    errors.push(
+      `Endpoint returned HTML (Content-Type: ${ct}) instead of JSON. This may indicate a wrong URL, a proxy/CDN page, or a misconfigured server.`,
+    );
   }
 
   // Step 2: Parse discovery payload
@@ -30,7 +46,14 @@ export async function scan(url: string, options: ScanOptions): Promise<ScanResul
   // Step 3: Payment flow (if --pay)
   const paymentFlow = await runPaymentFlow(url, discovery.payload, options);
 
-  // Step 4: Build context and run rules
+  // Step 4: Check facilitator reachability
+  let facilitatorReachable: { ok: boolean; status: number; error?: string } | undefined;
+  const facilitatorUrl = discovery.payload?.extra?.['facilitatorUrl'];
+  if (typeof facilitatorUrl === 'string' && facilitatorUrl.length > 0) {
+    facilitatorReachable = await checkFacilitatorReachable(facilitatorUrl);
+  }
+
+  // Step 5: Build context and run rules
   let bodyJson: unknown = null;
   try {
     bodyJson = JSON.parse(response.body);
@@ -44,6 +67,7 @@ export async function scan(url: string, options: ScanOptions): Promise<ScanResul
     discovery: discovery.payload,
     bodyJson,
     paymentFlow: options.pay ? paymentFlow : undefined,
+    facilitatorReachable,
   };
 
   const ruleResults = runRules(context, allRules);

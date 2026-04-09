@@ -84,4 +84,6 @@ export interface HttpResponse {
   status: number;
   headers: Record<string, string>;
   body: string;
+  responseTimeMs: number;
+  error?: string;
 }

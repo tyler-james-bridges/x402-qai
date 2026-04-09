@@ -12,6 +12,9 @@ import { pricingRules } from './pricing.js';
 import { schemeRules } from './scheme.js';
 import { errorRules } from './errors.js';
 import { paymentRules } from './payment.js';
+import { headerRules } from './headers.js';
+import { facilitatorRules } from './facilitator.js';
+import { timingRules } from './timing.js';
 
 export interface ScanContext {
   url: string;
@@ -19,6 +22,7 @@ export interface ScanContext {
   discovery: DiscoveryPayload | null;
   bodyJson: unknown;
   paymentFlow?: PaymentFlowResult;
+  facilitatorReachable?: { ok: boolean; status: number; error?: string };
 }
 
 export interface Rule {
@@ -69,18 +73,30 @@ export function calculateScore(results: RuleResult[]): ScoreBreakdown {
 }
 
 export function getAllRules(): Rule[] {
-  return [...discoveryRules, ...pricingRules, ...schemeRules, ...errorRules, ...paymentRules];
+  return [
+    ...discoveryRules,
+    ...pricingRules,
+    ...schemeRules,
+    ...errorRules,
+    ...paymentRules,
+    ...headerRules,
+    ...facilitatorRules,
+    ...timingRules,
+  ];
 }
 
 function categoryFromId(id: string): ScoreCategory {
   const prefix = id.split('.')[0];
   switch (prefix) {
     case 'discovery':
+    case 'timing':
       return 'discovery';
     case 'pricing':
     case 'scheme':
+    case 'headers':
       return 'headers';
     case 'flow':
+    case 'facilitator':
       return 'paymentFlow';
     case 'errors':
       return 'errorHandling';

@@ -83,6 +83,7 @@ describe('runPaymentFlow', () => {
       status: 200,
       headers: { 'content-type': 'application/json' },
       body: '{"ok":true}',
+      responseTimeMs: 100,
     });
 
     const result = await runPaymentFlow(
@@ -116,6 +117,7 @@ describe('runPaymentFlow', () => {
       status: 200,
       headers: { 'content-type': 'application/json' },
       body: '{"data":"ok"}',
+      responseTimeMs: 100,
     });
 
     const result = await runPaymentFlow('https://example.com/api', makeDiscovery(), makeOptions());
@@ -131,6 +133,7 @@ describe('runPaymentFlow', () => {
       status: 402,
       headers: {},
       body: '{"error":"invalid payment"}',
+      responseTimeMs: 100,
     });
 
     const result = await runPaymentFlow('https://example.com/api', makeDiscovery(), makeOptions());
@@ -155,6 +158,7 @@ describe('runPaymentFlow', () => {
       status: 200,
       headers: {},
       body: '{}',
+      responseTimeMs: 100,
     });
 
     const result = await runPaymentFlow('https://example.com/api', makeDiscovery(), makeOptions());

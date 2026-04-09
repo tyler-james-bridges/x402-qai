@@ -60,6 +60,7 @@ describe('scanBatch', () => {
       status: 402,
       headers: { 'content-type': 'application/json' },
       body: validPayload(),
+      responseTimeMs: 100,
     });
 
     const urls = ['https://a.com/api', 'https://b.com/api', 'https://c.com/api'];
@@ -82,11 +83,13 @@ describe('scanBatch', () => {
         status: 402,
         headers: { 'content-type': 'application/json' },
         body: validPayload(),
+        responseTimeMs: 100,
       })
       .mockResolvedValueOnce({
         status: 200,
         headers: {},
         body: 'OK',
+        responseTimeMs: 100,
       });
 
     const urls = ['https://good.com/api', 'https://bad.com/api'];
@@ -98,18 +101,28 @@ describe('scanBatch', () => {
   });
 
   it('continues scanning after a network error', async () => {
-    mockedSendDiscovery.mockRejectedValueOnce(new Error('ECONNREFUSED')).mockResolvedValueOnce({
-      status: 402,
-      headers: { 'content-type': 'application/json' },
-      body: validPayload(),
-    });
+    mockedSendDiscovery
+      .mockResolvedValueOnce({
+        status: 0,
+        headers: {},
+        body: '',
+        responseTimeMs: 100,
+        error:
+          'Endpoint is unreachable (connection refused). The server may be down or not listening on the expected port.',
+      })
+      .mockResolvedValueOnce({
+        status: 402,
+        headers: { 'content-type': 'application/json' },
+        body: validPayload(),
+        responseTimeMs: 100,
+      });
 
     const urls = ['https://down.com/api', 'https://up.com/api'];
     const results = await scanBatch(urls, defaultOptions);
 
     expect(results).toHaveLength(2);
     expect(results[0].passed).toBe(false);
-    expect(results[0].errors[0]).toContain('ECONNREFUSED');
+    expect(results[0].errors[0]).toContain('unreachable');
     expect(results[1].passed).toBe(true);
   });
 
@@ -121,6 +134,7 @@ describe('scanBatch', () => {
         status: 402,
         headers: { 'content-type': 'application/json' },
         body: validPayload(),
+        responseTimeMs: 100,
       };
     });
 

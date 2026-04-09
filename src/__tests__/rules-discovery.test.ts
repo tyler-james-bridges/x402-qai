@@ -16,6 +16,7 @@ function makeContext(overrides?: Partial<ScanContext>): ScanContext {
         amount: '0.01',
         payTo: '0xabc',
       }),
+      responseTimeMs: 100,
     },
     discovery: {
       x402Version: 1,
@@ -52,12 +53,16 @@ describe('discovery.status-402', () => {
   });
 
   it('passes when status is 200 (discovery info endpoint)', () => {
-    const result = rule.check(makeContext({ response: { status: 200, headers: {}, body: '' } }));
+    const result = rule.check(
+      makeContext({ response: { status: 200, headers: {}, body: '', responseTimeMs: 100 } }),
+    );
     expect(result.passed).toBe(true);
   });
 
   it('fails when status is 500', () => {
-    const result = rule.check(makeContext({ response: { status: 500, headers: {}, body: '' } }));
+    const result = rule.check(
+      makeContext({ response: { status: 500, headers: {}, body: '', responseTimeMs: 100 } }),
+    );
     expect(result.passed).toBe(false);
   });
 });

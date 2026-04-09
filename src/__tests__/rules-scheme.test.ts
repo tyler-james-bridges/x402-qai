@@ -18,7 +18,7 @@ function makeContext(discoveryOverrides?: Partial<DiscoveryPayload> | null): Sca
         };
   return {
     url: 'https://example.com/api',
-    response: { status: 402, headers: {}, body: '{}' },
+    response: { status: 402, headers: {}, body: '{}', responseTimeMs: 100 },
     discovery,
     bodyJson: {},
   };

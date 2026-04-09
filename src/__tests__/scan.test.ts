@@ -7,6 +7,14 @@ vi.mock('../scanner/http.js', () => ({
   sendPaidRequest: vi.fn(),
 }));
 
+vi.mock('../rules/facilitator.js', async (importOriginal) => {
+  const orig = (await importOriginal()) as Record<string, unknown>;
+  return {
+    ...orig,
+    checkFacilitatorReachable: vi.fn().mockResolvedValue({ ok: true, status: 200 }),
+  };
+});
+
 import { sendDiscoveryRequest, sendPaidRequest } from '../scanner/http.js';
 
 const mockedSendDiscovery = vi.mocked(sendDiscoveryRequest);
@@ -39,6 +47,7 @@ describe('scan', () => {
       status: 402,
       headers: { 'content-type': 'application/json' },
       body: validPayload(),
+      responseTimeMs: 100,
     });
 
     const result = await scan('https://example.com/api', defaultOptions);
@@ -53,6 +62,7 @@ describe('scan', () => {
       status: 200,
       headers: { 'content-type': 'application/json' },
       body: validPayload(),
+      responseTimeMs: 100,
     });
 
     const result = await scan('https://example.com/api', defaultOptions);
@@ -66,6 +76,7 @@ describe('scan', () => {
       status: 200,
       headers: {},
       body: 'OK',
+      responseTimeMs: 100,
     });
 
     const result = await scan('https://example.com/api', defaultOptions);
@@ -73,11 +84,18 @@ describe('scan', () => {
   });
 
   it('handles network errors gracefully', async () => {
-    mockedSendDiscovery.mockRejectedValue(new Error('ECONNREFUSED'));
+    mockedSendDiscovery.mockResolvedValue({
+      status: 0,
+      headers: {},
+      body: '',
+      responseTimeMs: 50,
+      error:
+        'Endpoint is unreachable (connection refused). The server may be down or not listening on the expected port.',
+    });
 
     const result = await scan('https://example.com/api', defaultOptions);
     expect(result.passed).toBe(false);
-    expect(result.errors[0]).toContain('ECONNREFUSED');
+    expect(result.errors[0]).toContain('unreachable');
     expect(result.rules).toEqual([]);
   });
 
@@ -93,6 +111,7 @@ describe('scan', () => {
         amount: '-5',
         payTo: '0xabc',
       }),
+      responseTimeMs: 100,
     });
 
     const result = await scan('https://example.com/api', defaultOptions);
@@ -105,6 +124,7 @@ describe('scan', () => {
       status: 402,
       headers: {},
       body: validPayload(),
+      responseTimeMs: 100,
     });
 
     const result = await scan('https://example.com/api', defaultOptions);
@@ -118,6 +138,7 @@ describe('scan', () => {
       status: 402,
       headers: {},
       body: validPayload(),
+      responseTimeMs: 100,
     });
 
     const result = await scan('https://example.com/api', defaultOptions);
@@ -130,6 +151,7 @@ describe('scan', () => {
       status: 402,
       headers: { 'content-type': 'application/json' },
       body: validPayload(),
+      responseTimeMs: 100,
     });
 
     const result = await scan('https://example.com/api', { ...defaultOptions, pay: true });
@@ -142,6 +164,7 @@ describe('scan', () => {
       status: 402,
       headers: { 'content-type': 'application/json' },
       body: validPayload(),
+      responseTimeMs: 100,
     });
 
     const result = await scan('https://example.com/api', defaultOptions);
@@ -153,6 +176,7 @@ describe('scan', () => {
       status: 402,
       headers: { 'content-type': 'application/json' },
       body: validPayload(),
+      responseTimeMs: 100,
     });
 
     const result = await scan('https://example.com/api', { ...defaultOptions, pay: true });
@@ -168,11 +192,13 @@ describe('scan', () => {
       status: 402,
       headers: { 'content-type': 'application/json' },
       body: validPayload(),
+      responseTimeMs: 100,
     });
     mockedSendPaid.mockResolvedValue({
       status: 200,
       headers: { 'content-type': 'application/json' },
       body: '{"data":"ok"}',
+      responseTimeMs: 100,
     });
 
     const result = await scan('https://example.com/api', { ...defaultOptions, pay: true });
@@ -186,5 +212,31 @@ describe('scan', () => {
     } else {
       delete process.env['X402_PAYMENT_HEADER'];
     }
+  });
+
+  it('detects rate limiting (429)', async () => {
+    mockedSendDiscovery.mockResolvedValue({
+      status: 429,
+      headers: { 'retry-after': '30' },
+      body: 'Too Many Requests',
+      responseTimeMs: 50,
+    });
+
+    const result = await scan('https://example.com/api', defaultOptions);
+    expect(result.passed).toBe(false);
+    expect(result.errors[0]).toContain('Rate limited');
+    expect(result.errors[0]).toContain('30');
+  });
+
+  it('detects HTML response instead of JSON', async () => {
+    mockedSendDiscovery.mockResolvedValue({
+      status: 200,
+      headers: { 'content-type': 'text/html; charset=utf-8' },
+      body: '<html><body>Not found</body></html>',
+      responseTimeMs: 100,
+    });
+
+    const result = await scan('https://example.com/api', defaultOptions);
+    expect(result.errors[0]).toContain('HTML');
   });
 });

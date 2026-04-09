@@ -14,6 +14,7 @@ function makeResponse(overrides: Partial<HttpResponse> = {}): HttpResponse {
       amount: '0.01',
       payTo: '0xabc123',
     }),
+    responseTimeMs: 100,
     ...overrides,
   };
 }

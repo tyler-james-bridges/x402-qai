@@ -10,6 +10,7 @@ function makeContext(responseOverrides?: Partial<HttpResponse>): ScanContext {
       status: 500,
       headers: {},
       body: 'Internal Server Error',
+      responseTimeMs: 100,
       ...responseOverrides,
     },
     discovery: null,
