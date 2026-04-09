@@ -1,8 +1,15 @@
 import { sendDiscoveryRequest } from './scanner/http.js';
 import { parseDiscoveryResponse } from './scanner/discovery.js';
+import { runPaymentFlow } from './scanner/payment.js';
 import { allRules, runRules, calculateScore } from './rules/index.js';
 import type { ScanContext } from './rules/engine.js';
-import type { ScanOptions, ScanResult, DiscoveryPayload, RuleResult } from './types.js';
+import type {
+  ScanOptions,
+  ScanResult,
+  DiscoveryPayload,
+  PaymentFlowResult,
+  RuleResult,
+} from './types.js';
 
 export async function scan(url: string, options: ScanOptions): Promise<ScanResult> {
   const errors: string[] = [];
@@ -14,13 +21,16 @@ export async function scan(url: string, options: ScanOptions): Promise<ScanResul
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown network error';
     errors.push(`Network error: ${message}`);
-    return buildResult(url, [], null, errors);
+    return buildResult(url, [], null, undefined, errors);
   }
 
   // Step 2: Parse discovery payload
   const discovery = parseDiscoveryResponse(response);
 
-  // Step 3: Build context and run rules
+  // Step 3: Payment flow (if --pay)
+  const paymentFlow = await runPaymentFlow(url, discovery.payload, options);
+
+  // Step 4: Build context and run rules
   let bodyJson: unknown = null;
   try {
     bodyJson = JSON.parse(response.body);
@@ -33,17 +43,25 @@ export async function scan(url: string, options: ScanOptions): Promise<ScanResul
     response,
     discovery: discovery.payload,
     bodyJson,
+    paymentFlow: options.pay ? paymentFlow : undefined,
   };
 
   const ruleResults = runRules(context, allRules);
 
-  return buildResult(url, ruleResults, discovery.payload, errors);
+  return buildResult(
+    url,
+    ruleResults,
+    discovery.payload,
+    options.pay ? paymentFlow : undefined,
+    errors,
+  );
 }
 
 function buildResult(
   url: string,
   rules: RuleResult[],
   discovery: DiscoveryPayload | null,
+  paymentFlow: PaymentFlowResult | undefined,
   errors: string[],
 ): ScanResult {
   const score = calculateScore(rules);
@@ -55,6 +73,7 @@ function buildResult(
     score,
     rules,
     discovery,
+    paymentFlow,
     errors,
   };
 }

@@ -1,4 +1,4 @@
-import type { ScanResult, RuleResult, CategoryScore } from '../types.js';
+import type { ScanResult, RuleResult, CategoryScore, PaymentFlowResult } from '../types.js';
 
 const noColor = Boolean(process.env['NO_COLOR']);
 
@@ -47,6 +47,22 @@ function formatCategory(cat: CategoryScore): string {
   return `  ${cat.category.padEnd(16)} ${color}${cat.score}/${cat.maxScore}${RESET} (${pct}%)`;
 }
 
+function formatPaymentFlow(pf: PaymentFlowResult): string {
+  if (pf.skipped) {
+    return `  ${YELLOW}[SKIP]${RESET} ${pf.reason ?? 'Payment flow skipped'}`;
+  }
+  if (pf.attempted && pf.passed) {
+    return `  ${GREEN}[PASS]${RESET} Paid request succeeded (status ${pf.details?.['status'] ?? 'unknown'})`;
+  }
+  if (pf.attempted && !pf.passed) {
+    const err = pf.errors.length > 0 ? pf.errors[0] : 'Payment flow failed';
+    return `  ${RED}[FAIL]${RESET} ${err}`;
+  }
+  // Not attempted (guardrail or missing amount)
+  const err = pf.errors.length > 0 ? pf.errors[0] : 'Payment flow not attempted';
+  return `  ${RED}[FAIL]${RESET} ${err}`;
+}
+
 export function formatText(result: ScanResult): string {
   const lines: string[] = [];
 
@@ -60,6 +76,13 @@ export function formatText(result: ScanResult): string {
   lines.push(`${BOLD}Rules${RESET}`);
   for (const rule of result.rules) {
     lines.push(formatRule(rule));
+  }
+
+  // Payment Flow
+  if (result.paymentFlow) {
+    lines.push('');
+    lines.push(`${BOLD}Payment Flow${RESET}`);
+    lines.push(formatPaymentFlow(result.paymentFlow));
   }
 
   // Errors

@@ -58,6 +58,15 @@ export interface ScanOptions {
   threshold?: number;
 }
 
+export interface PaymentFlowResult {
+  attempted: boolean;
+  passed: boolean;
+  skipped: boolean;
+  reason?: string;
+  details?: Record<string, unknown>;
+  errors: string[];
+}
+
 export interface ScanResult {
   url: string;
   timestamp: string;
@@ -65,6 +74,7 @@ export interface ScanResult {
   score: ScoreBreakdown;
   rules: RuleResult[];
   discovery: DiscoveryPayload | null;
+  paymentFlow?: PaymentFlowResult;
   errors: string[];
 }
 

@@ -3,11 +3,19 @@ export { discoveryRules } from './discovery.js';
 export { pricingRules } from './pricing.js';
 export { schemeRules } from './scheme.js';
 export { errorRules } from './errors.js';
+export { paymentRules } from './payment.js';
 
 import type { Rule } from './engine.js';
 import { discoveryRules } from './discovery.js';
 import { pricingRules } from './pricing.js';
 import { schemeRules } from './scheme.js';
 import { errorRules } from './errors.js';
+import { paymentRules } from './payment.js';
 
-export const allRules: Rule[] = [...discoveryRules, ...pricingRules, ...schemeRules, ...errorRules];
+export const allRules: Rule[] = [
+  ...discoveryRules,
+  ...pricingRules,
+  ...schemeRules,
+  ...errorRules,
+  ...paymentRules,
+];

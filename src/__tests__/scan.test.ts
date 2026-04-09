@@ -4,11 +4,13 @@ import type { ScanOptions } from '../types.js';
 
 vi.mock('../scanner/http.js', () => ({
   sendDiscoveryRequest: vi.fn(),
+  sendPaidRequest: vi.fn(),
 }));
 
-import { sendDiscoveryRequest } from '../scanner/http.js';
+import { sendDiscoveryRequest, sendPaidRequest } from '../scanner/http.js';
 
 const mockedSendDiscovery = vi.mocked(sendDiscoveryRequest);
+const mockedSendPaid = vi.mocked(sendPaidRequest);
 
 const defaultOptions: ScanOptions = {
   pay: false,
@@ -121,5 +123,68 @@ describe('scan', () => {
     const result = await scan('https://example.com/api', defaultOptions);
     expect(result.timestamp).toBeTruthy();
     expect(new Date(result.timestamp).getTime()).not.toBeNaN();
+  });
+
+  it('includes paymentFlow in result when pay mode enabled', async () => {
+    mockedSendDiscovery.mockResolvedValue({
+      status: 402,
+      headers: { 'content-type': 'application/json' },
+      body: validPayload(),
+    });
+
+    const result = await scan('https://example.com/api', { ...defaultOptions, pay: true });
+    expect(result.paymentFlow).toBeDefined();
+    expect(result.paymentFlow?.skipped).toBe(true);
+  });
+
+  it('does not include paymentFlow when pay mode off', async () => {
+    mockedSendDiscovery.mockResolvedValue({
+      status: 402,
+      headers: { 'content-type': 'application/json' },
+      body: validPayload(),
+    });
+
+    const result = await scan('https://example.com/api', defaultOptions);
+    expect(result.paymentFlow).toBeUndefined();
+  });
+
+  it('includes payment rule result when pay mode enabled', async () => {
+    mockedSendDiscovery.mockResolvedValue({
+      status: 402,
+      headers: { 'content-type': 'application/json' },
+      body: validPayload(),
+    });
+
+    const result = await scan('https://example.com/api', { ...defaultOptions, pay: true });
+    const paymentRule = result.rules.find((r) => r.id === 'flow.payment-verified');
+    expect(paymentRule).toBeDefined();
+  });
+
+  it('passes payment rule when paid request succeeds', async () => {
+    const origEnv = process.env['X402_PAYMENT_HEADER'];
+    process.env['X402_PAYMENT_HEADER'] = 'test-token';
+
+    mockedSendDiscovery.mockResolvedValue({
+      status: 402,
+      headers: { 'content-type': 'application/json' },
+      body: validPayload(),
+    });
+    mockedSendPaid.mockResolvedValue({
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+      body: '{"data":"ok"}',
+    });
+
+    const result = await scan('https://example.com/api', { ...defaultOptions, pay: true });
+    const paymentRule = result.rules.find((r) => r.id === 'flow.payment-verified');
+    expect(paymentRule?.passed).toBe(true);
+    expect(result.paymentFlow?.attempted).toBe(true);
+    expect(result.paymentFlow?.passed).toBe(true);
+
+    if (origEnv !== undefined) {
+      process.env['X402_PAYMENT_HEADER'] = origEnv;
+    } else {
+      delete process.env['X402_PAYMENT_HEADER'];
+    }
   });
 });

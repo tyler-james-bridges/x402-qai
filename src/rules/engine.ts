@@ -5,17 +5,20 @@ import type {
   ScoreCategory,
   HttpResponse,
   DiscoveryPayload,
+  PaymentFlowResult,
 } from '../types.js';
 import { discoveryRules } from './discovery.js';
 import { pricingRules } from './pricing.js';
 import { schemeRules } from './scheme.js';
 import { errorRules } from './errors.js';
+import { paymentRules } from './payment.js';
 
 export interface ScanContext {
   url: string;
   response: HttpResponse;
   discovery: DiscoveryPayload | null;
   bodyJson: unknown;
+  paymentFlow?: PaymentFlowResult;
 }
 
 export interface Rule {
@@ -66,7 +69,7 @@ export function calculateScore(results: RuleResult[]): ScoreBreakdown {
 }
 
 export function getAllRules(): Rule[] {
-  return [...discoveryRules, ...pricingRules, ...schemeRules, ...errorRules];
+  return [...discoveryRules, ...pricingRules, ...schemeRules, ...errorRules, ...paymentRules];
 }
 
 function categoryFromId(id: string): ScoreCategory {
