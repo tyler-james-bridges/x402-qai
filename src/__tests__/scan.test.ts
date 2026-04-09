@@ -7,6 +7,12 @@ vi.mock('../scanner/http.js', () => ({
   sendPaidRequest: vi.fn(),
 }));
 
+vi.mock('../scanner/cdp.js', () => ({
+  checkCdpAvailable: vi.fn().mockResolvedValue(false),
+  getCdpSupported: vi.fn().mockResolvedValue({ schemes: [], networks: [] }),
+  checkCdpCompatibility: vi.fn().mockReturnValue({ compatible: false, issues: [] }),
+}));
+
 vi.mock('../rules/facilitator.js', async (importOriginal) => {
   const orig = (await importOriginal()) as Record<string, unknown>;
   return {

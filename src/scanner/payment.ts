@@ -1,4 +1,5 @@
 import { sendPaidRequest } from './http.js';
+import { checkCdpAvailable, getCdpSupported, checkCdpCompatibility } from './cdp.js';
 import type { DiscoveryPayload, ScanOptions } from '../types.js';
 
 export interface PaymentFlowResult {
@@ -8,6 +9,11 @@ export interface PaymentFlowResult {
   reason?: string;
   details?: Record<string, unknown>;
   errors: string[];
+  cdpAvailable?: boolean;
+  cdpCompatibility?: {
+    compatible: boolean;
+    issues: string[];
+  };
 }
 
 const DEFAULT_MAX_AMOUNT = '0.01';
@@ -55,21 +61,36 @@ export async function runPaymentFlow(
     };
   }
 
-  // Check for payment header from env
+  // Strategy 1: Header passthrough from env var
   const paymentHeader = process.env['X402_PAYMENT_HEADER'];
-  if (!paymentHeader) {
-    return {
-      attempted: false,
-      passed: false,
-      skipped: true,
-      reason: 'No payment credential configured',
-      errors: [],
-    };
+  if (paymentHeader) {
+    return runHeaderStrategy(url, paymentHeader, options.timeout);
   }
 
-  // Send paid request
+  // Strategy 2: CDP CLI compatibility check
+  const cdpAvailable = await checkCdpAvailable();
+  if (cdpAvailable) {
+    return runCdpStrategy(discovery);
+  }
+
+  // No strategy available
+  return {
+    attempted: false,
+    passed: false,
+    skipped: true,
+    reason: 'No payment credential configured (set X402_PAYMENT_HEADER or install CDP CLI)',
+    errors: [],
+    cdpAvailable: false,
+  };
+}
+
+async function runHeaderStrategy(
+  url: string,
+  paymentHeader: string,
+  timeout: number,
+): Promise<PaymentFlowResult> {
   try {
-    const response = await sendPaidRequest(url, { 'x-payment': paymentHeader }, options.timeout);
+    const response = await sendPaidRequest(url, { 'x-payment': paymentHeader }, timeout);
 
     const passed = response.status >= 200 && response.status < 300;
 
@@ -78,6 +99,7 @@ export async function runPaymentFlow(
       passed,
       skipped: false,
       details: {
+        strategy: 'header',
         status: response.status,
         contentType: response.headers['content-type'] ?? null,
       },
@@ -90,6 +112,36 @@ export async function runPaymentFlow(
       passed: false,
       skipped: false,
       errors: [`Payment request failed: ${message}`],
+    };
+  }
+}
+
+async function runCdpStrategy(discovery: DiscoveryPayload): Promise<PaymentFlowResult> {
+  try {
+    const supported = await getCdpSupported();
+    const compatibility = checkCdpCompatibility(discovery, supported);
+
+    return {
+      attempted: true,
+      passed: compatibility.compatible,
+      skipped: false,
+      details: {
+        strategy: 'cdp',
+        supportedSchemes: supported.schemes,
+        supportedNetworks: supported.networks,
+      },
+      errors: compatibility.compatible ? [] : compatibility.issues,
+      cdpAvailable: true,
+      cdpCompatibility: compatibility,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return {
+      attempted: true,
+      passed: false,
+      skipped: false,
+      errors: [`CDP compatibility check failed: ${message}`],
+      cdpAvailable: true,
     };
   }
 }

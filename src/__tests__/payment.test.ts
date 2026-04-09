@@ -7,6 +7,12 @@ vi.mock('../scanner/http.js', () => ({
   sendPaidRequest: vi.fn(),
 }));
 
+vi.mock('../scanner/cdp.js', () => ({
+  checkCdpAvailable: vi.fn().mockResolvedValue(false),
+  getCdpSupported: vi.fn().mockResolvedValue({ schemes: [], networks: [] }),
+  checkCdpCompatibility: vi.fn().mockReturnValue({ compatible: false, issues: [] }),
+}));
+
 import { sendPaidRequest } from '../scanner/http.js';
 
 const mockedSendPaid = vi.mocked(sendPaidRequest);

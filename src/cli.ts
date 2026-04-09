@@ -24,6 +24,7 @@ program
   .option('--file <path>', 'file containing URLs to scan (one per line)')
   .option('--timeout <ms>', 'request timeout in milliseconds', '10000')
   .option('--watch <seconds>', 'watch mode: re-scan every N seconds (single URL only)')
+  .option('--lint', 'run x402-lint before the endpoint scan', false)
   .action(async (url: string | undefined, opts: Record<string, unknown>) => {
     const urls = collectUrls(url, opts.file as string | undefined);
 
@@ -41,6 +42,7 @@ program
       timeout: Number(opts.timeout),
       format,
       threshold,
+      lint: Boolean(opts.lint),
     };
 
     // Watch mode

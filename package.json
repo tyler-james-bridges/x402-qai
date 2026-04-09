@@ -1,6 +1,6 @@
 {
   "name": "x402-qai",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Test x402 endpoints before your users do.",
   "type": "module",
   "main": "dist/index.js",

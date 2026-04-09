@@ -1,6 +1,7 @@
 import { sendDiscoveryRequest } from './scanner/http.js';
 import { parseDiscoveryResponse } from './scanner/discovery.js';
 import { runPaymentFlow } from './scanner/payment.js';
+import { runLint } from './scanner/lint.js';
 import { allRules, runRules, calculateScore } from './rules/index.js';
 import { checkFacilitatorReachable } from './rules/facilitator.js';
 import type { ScanContext } from './rules/engine.js';
@@ -9,11 +10,18 @@ import type {
   ScanResult,
   DiscoveryPayload,
   PaymentFlowResult,
+  LintResult,
   RuleResult,
 } from './types.js';
 
 export async function scan(url: string, options: ScanOptions): Promise<ScanResult> {
   const errors: string[] = [];
+
+  // Step 0: Lint (if --lint)
+  let lintResult: LintResult | undefined;
+  if (options.lint) {
+    lintResult = await runLint();
+  }
 
   // Step 1: Discovery request (no longer throws on network errors)
   const response = await sendDiscoveryRequest(url, options.timeout);
@@ -21,7 +29,7 @@ export async function scan(url: string, options: ScanOptions): Promise<ScanResul
   // Check for network-level errors
   if (response.error) {
     errors.push(response.error);
-    return buildResult(url, [], null, undefined, errors);
+    return buildResult(url, [], null, undefined, lintResult, errors);
   }
 
   // Check for rate limiting
@@ -29,7 +37,7 @@ export async function scan(url: string, options: ScanOptions): Promise<ScanResul
     const retryAfter = response.headers['retry-after'];
     const retryMsg = retryAfter ? ` Retry after ${retryAfter} seconds.` : '';
     errors.push(`Rate limited by server (429 Too Many Requests).${retryMsg}`);
-    return buildResult(url, [], null, undefined, errors);
+    return buildResult(url, [], null, undefined, lintResult, errors);
   }
 
   // Detect HTML responses when JSON is expected
@@ -77,6 +85,7 @@ export async function scan(url: string, options: ScanOptions): Promise<ScanResul
     ruleResults,
     discovery.payload,
     options.pay ? paymentFlow : undefined,
+    lintResult,
     errors,
   );
 }
@@ -86,6 +95,7 @@ function buildResult(
   rules: RuleResult[],
   discovery: DiscoveryPayload | null,
   paymentFlow: PaymentFlowResult | undefined,
+  lint: LintResult | undefined,
   errors: string[],
 ): ScanResult {
   const score = calculateScore(rules);
@@ -98,6 +108,7 @@ function buildResult(
     rules,
     discovery,
     paymentFlow,
+    lint,
     errors,
   };
 }

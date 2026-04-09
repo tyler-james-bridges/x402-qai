@@ -1,4 +1,10 @@
-import type { ScanResult, RuleResult, CategoryScore, PaymentFlowResult } from '../types.js';
+import type {
+  ScanResult,
+  RuleResult,
+  CategoryScore,
+  PaymentFlowResult,
+  LintResult,
+} from '../types.js';
 
 const noColor = Boolean(process.env['NO_COLOR']);
 
@@ -47,20 +53,80 @@ function formatCategory(cat: CategoryScore): string {
   return `  ${cat.category.padEnd(16)} ${color}${cat.score}/${cat.maxScore}${RESET} (${pct}%)`;
 }
 
-function formatPaymentFlow(pf: PaymentFlowResult): string {
+function formatPaymentFlow(pf: PaymentFlowResult): string[] {
+  const lines: string[] = [];
+
   if (pf.skipped) {
-    return `  ${YELLOW}[SKIP]${RESET} ${pf.reason ?? 'Payment flow skipped'}`;
-  }
-  if (pf.attempted && pf.passed) {
-    return `  ${GREEN}[PASS]${RESET} Paid request succeeded (status ${pf.details?.['status'] ?? 'unknown'})`;
-  }
-  if (pf.attempted && !pf.passed) {
+    lines.push(`  ${YELLOW}[SKIP]${RESET} ${pf.reason ?? 'Payment flow skipped'}`);
+  } else if (pf.attempted && pf.passed) {
+    const strategy = pf.details?.['strategy'] ?? 'unknown';
+    if (strategy === 'cdp') {
+      lines.push(`  ${GREEN}[PASS]${RESET} CDP compatibility check passed`);
+    } else {
+      lines.push(
+        `  ${GREEN}[PASS]${RESET} Paid request succeeded (status ${pf.details?.['status'] ?? 'unknown'})`,
+      );
+    }
+  } else if (pf.attempted && !pf.passed) {
     const err = pf.errors.length > 0 ? pf.errors[0] : 'Payment flow failed';
-    return `  ${RED}[FAIL]${RESET} ${err}`;
+    lines.push(`  ${RED}[FAIL]${RESET} ${err}`);
+  } else {
+    const err = pf.errors.length > 0 ? pf.errors[0] : 'Payment flow not attempted';
+    lines.push(`  ${RED}[FAIL]${RESET} ${err}`);
   }
-  // Not attempted (guardrail or missing amount)
-  const err = pf.errors.length > 0 ? pf.errors[0] : 'Payment flow not attempted';
-  return `  ${RED}[FAIL]${RESET} ${err}`;
+
+  // CDP compatibility details
+  if (pf.cdpAvailable !== undefined) {
+    lines.push(`  ${DIM}CDP CLI: ${pf.cdpAvailable ? 'available' : 'not found'}${RESET}`);
+  }
+  if (pf.cdpCompatibility) {
+    if (pf.cdpCompatibility.compatible) {
+      lines.push(`  ${GREEN}CDP compatible${RESET} with endpoint requirements`);
+    } else {
+      for (const issue of pf.cdpCompatibility.issues) {
+        lines.push(`  ${YELLOW}-> ${issue}${RESET}`);
+      }
+    }
+  }
+
+  return lines;
+}
+
+function formatLint(lint: LintResult): string[] {
+  const lines: string[] = [];
+
+  if (!lint.available) {
+    lines.push(`  ${YELLOW}[SKIP]${RESET} ${lint.error ?? 'x402-lint not available'}`);
+    return lines;
+  }
+
+  if (!lint.ran) {
+    lines.push(`  ${RED}[FAIL]${RESET} ${lint.error ?? 'x402-lint failed to run'}`);
+    return lines;
+  }
+
+  if (lint.passed && lint.issues.length === 0) {
+    lines.push(`  ${GREEN}[PASS]${RESET} No issues found`);
+    return lines;
+  }
+
+  if (lint.passed) {
+    lines.push(`  ${GREEN}[PASS]${RESET} ${lint.issues.length} warning(s)`);
+  } else {
+    const errorCount = lint.issues.filter((i) => i.severity === 'error').length;
+    lines.push(
+      `  ${RED}[FAIL]${RESET} ${errorCount} error(s), ${lint.issues.length - errorCount} warning(s)`,
+    );
+  }
+
+  for (const issue of lint.issues) {
+    const color = issue.severity === 'error' ? RED : YELLOW;
+    const loc = issue.line ? `${issue.file}:${issue.line}` : issue.file;
+    lines.push(`  ${color}${issue.severity}${RESET} ${loc} ${DIM}${issue.rule}${RESET}`);
+    lines.push(`    ${issue.message}`);
+  }
+
+  return lines;
 }
 
 export function formatText(result: ScanResult): string {
@@ -78,11 +144,18 @@ export function formatText(result: ScanResult): string {
     lines.push(formatRule(rule));
   }
 
+  // Lint
+  if (result.lint) {
+    lines.push('');
+    lines.push(`${BOLD}Lint${RESET}`);
+    lines.push(...formatLint(result.lint));
+  }
+
   // Payment Flow
   if (result.paymentFlow) {
     lines.push('');
     lines.push(`${BOLD}Payment Flow${RESET}`);
-    lines.push(formatPaymentFlow(result.paymentFlow));
+    lines.push(...formatPaymentFlow(result.paymentFlow));
   }
 
   // Errors

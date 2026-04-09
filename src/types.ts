@@ -56,6 +56,7 @@ export interface ScanOptions {
   timeout: number;
   format: ReportFormat;
   threshold?: number;
+  lint?: boolean;
 }
 
 export interface PaymentFlowResult {
@@ -65,6 +66,27 @@ export interface PaymentFlowResult {
   reason?: string;
   details?: Record<string, unknown>;
   errors: string[];
+  cdpAvailable?: boolean;
+  cdpCompatibility?: {
+    compatible: boolean;
+    issues: string[];
+  };
+}
+
+export interface LintIssue {
+  file: string;
+  line?: number;
+  rule: string;
+  message: string;
+  severity: 'error' | 'warning';
+}
+
+export interface LintResult {
+  available: boolean;
+  ran: boolean;
+  passed: boolean;
+  issues: LintIssue[];
+  error?: string;
 }
 
 export interface ScanResult {
@@ -75,6 +97,7 @@ export interface ScanResult {
   rules: RuleResult[];
   discovery: DiscoveryPayload | null;
   paymentFlow?: PaymentFlowResult;
+  lint?: LintResult;
   errors: string[];
 }
 
