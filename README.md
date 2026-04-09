@@ -46,6 +46,7 @@ Options:
   --max-amount <n>       Maximum payment amount (e.g. 0.01)
   --file <path>          File containing URLs to scan (one per line)
   --timeout <ms>         Request timeout in milliseconds (default: 10000)
+  --watch <seconds>      Watch mode: re-scan every N seconds (single URL only)
   -V, --version          Output the version number
   -h, --help             Display help
 ```
@@ -108,6 +109,90 @@ Batch Summary
   FAIL  45/100  https://api.example.com/v1/broken
 
 1/2 passed, average score: 65/100
+```
+
+## Watch Mode
+
+Monitor an endpoint continuously and see changes over time:
+
+```bash
+x402-qai https://your-api.com/protected-resource --watch 30
+```
+
+Watch mode re-scans the endpoint every N seconds (default 30) and prints timestamped results with deltas showing score changes, new failures, and recovered passes. Press Ctrl+C to stop.
+
+Watch mode only works with a single URL (not batch mode).
+
+```
+--- [2026-04-09T12:00:00.000Z] iteration #1 ---
+  URL: https://your-api.com/protected-resource
+  Score: 85/100  PASS
+
+--- [2026-04-09T12:00:30.000Z] iteration #2 ---
+  URL: https://your-api.com/protected-resource
+  Score: 85/100  PASS
+  Score: 85 (no change)
+
+--- [2026-04-09T12:01:00.000Z] iteration #3 ---
+  URL: https://your-api.com/protected-resource
+  Score: 70/100  FAIL
+  Failed rules: price-valid, amount-positive
+  Score: 85 -> 70 (-15)
+  New failures: price-valid, amount-positive
+```
+
+## GitHub Actions
+
+Use x402-qai as a GitHub Action in your CI pipeline:
+
+```yaml
+name: x402 Compliance
+on: [push, pull_request]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan x402 endpoint
+        uses: tyler-james-bridges/x402-qai@main
+        with:
+          url: https://your-api.com/protected-resource
+          threshold: 80
+```
+
+### Action Inputs
+
+| Input | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `url` | No* | | Endpoint URL to scan |
+| `urls-file` | No* | | Path to file with URLs (one per line) |
+| `threshold` | No | `70` | Minimum passing score (0-100) |
+| `pay` | No | `false` | Enable payment testing |
+| `max-amount` | No | `0.01` | Maximum payment amount in USD |
+
+*At least one of `url` or `urls-file` is required.
+
+### Batch scanning in CI
+
+```yaml
+      - name: Scan multiple endpoints
+        uses: tyler-james-bridges/x402-qai@main
+        with:
+          urls-file: endpoints.txt
+          threshold: 75
+```
+
+### Payment flow testing in CI
+
+```yaml
+      - name: Scan with payment testing
+        uses: tyler-james-bridges/x402-qai@main
+        with:
+          url: https://your-api.com/protected-resource
+          pay: true
+          max-amount: '0.005'
 ```
 
 ## Scoring

@@ -6,6 +6,7 @@ import { scan } from './index.js';
 import { scanBatch } from './batch.js';
 import { formatText, formatBatchTextReport } from './reporters/text.js';
 import { formatJson, formatBatchJsonReport } from './reporters/json.js';
+import { startWatch, formatWatchResult } from './watch.js';
 import type { ScanOptions, ReportFormat } from './types.js';
 
 const program = new Command();
@@ -22,6 +23,7 @@ program
   .option('--max-amount <n>', 'maximum payment amount (e.g. 0.01)')
   .option('--file <path>', 'file containing URLs to scan (one per line)')
   .option('--timeout <ms>', 'request timeout in milliseconds', '10000')
+  .option('--watch <seconds>', 'watch mode: re-scan every N seconds (single URL only)')
   .action(async (url: string | undefined, opts: Record<string, unknown>) => {
     const urls = collectUrls(url, opts.file as string | undefined);
 
@@ -40,6 +42,33 @@ program
       format,
       threshold,
     };
+
+    // Watch mode
+    if (opts.watch !== undefined) {
+      if (urls.length > 1) {
+        console.error('Error: --watch only supports a single URL');
+        process.exit(2);
+      }
+
+      const intervalSec = Number(opts.watch) || 30;
+      const handle = startWatch({
+        url: urls[0],
+        intervalSec,
+        scanOptions,
+        onResult: (result, delta, iteration) => {
+          console.log(formatWatchResult(result, delta, iteration));
+        },
+      });
+
+      const onSignal = () => {
+        handle.stop();
+      };
+      process.on('SIGINT', onSignal);
+      process.on('SIGTERM', onSignal);
+
+      await handle.stopped;
+      process.exit(0);
+    }
 
     const isBatch = urls.length > 1;
 

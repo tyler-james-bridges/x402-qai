@@ -1,0 +1,52 @@
+name: x402-qai
+description: x402 endpoint compliance testing for CI
+
+inputs:
+  url:
+    description: Endpoint URL to scan
+    required: false
+  urls-file:
+    description: Path to file with URLs (one per line)
+    required: false
+  threshold:
+    description: Minimum passing score (0-100)
+    required: false
+    default: '70'
+  pay:
+    description: Enable payment testing
+    required: false
+    default: 'false'
+  max-amount:
+    description: Maximum payment amount in USD
+    required: false
+    default: '0.01'
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Run x402-qai scan
+      shell: bash
+      run: |
+        ARGS="--ci --threshold ${{ inputs.threshold }}"
+
+        if [ "${{ inputs.pay }}" = "true" ]; then
+          ARGS="$ARGS --pay --max-amount ${{ inputs.max-amount }}"
+        fi
+
+        if [ -n "${{ inputs.urls-file }}" ]; then
+          ARGS="$ARGS --file ${{ inputs.urls-file }}"
+        fi
+
+        if [ -n "${{ inputs.url }}" ]; then
+          npx x402-qai@latest ${{ inputs.url }} $ARGS
+        elif [ -n "${{ inputs.urls-file }}" ]; then
+          npx x402-qai@latest $ARGS
+        else
+          echo "Error: either url or urls-file input is required"
+          exit 2
+        fi
