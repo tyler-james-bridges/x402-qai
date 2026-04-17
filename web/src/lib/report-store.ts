@@ -39,17 +39,4 @@ export function listReports(): StoredReport[] {
   );
 }
 
-const GRADE_ORDER: Array<{ min: number; grade: 'A' | 'B' | 'C' | 'D' | 'F' }> = [
-  { min: 90, grade: 'A' },
-  { min: 80, grade: 'B' },
-  { min: 70, grade: 'C' },
-  { min: 60, grade: 'D' },
-  { min: 0, grade: 'F' },
-];
-
-export function scoreToGrade(score: number): 'A' | 'B' | 'C' | 'D' | 'F' {
-  for (const { min, grade } of GRADE_ORDER) {
-    if (score >= min) return grade;
-  }
-  return 'F';
-}
+export { scoreToGrade } from './types';

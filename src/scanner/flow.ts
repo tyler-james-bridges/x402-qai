@@ -60,7 +60,6 @@ export async function traceFlow(url: string, options: TraceFlowOptions): Promise
   const steps: FlowStep[] = [];
   const errors: string[] = [];
 
-  // Step 1: outgoing discovery request
   const reqStart = now();
   steps.push({
     kind: 'discovery-request',
@@ -76,7 +75,6 @@ export async function traceFlow(url: string, options: TraceFlowOptions): Promise
     },
   });
 
-  // Step 2: discovery response
   const discoveryResponse = await sendDiscoveryRequest(url, options.timeout);
   const discoveryStep: FlowStep = {
     kind: 'discovery-response',
@@ -110,7 +108,6 @@ export async function traceFlow(url: string, options: TraceFlowOptions): Promise
     };
   }
 
-  // Step 3: parse requirements
   const parseStart = now();
   const discovery = parseDiscoveryResponse(discoveryResponse);
   const parseStep: FlowStep = {
@@ -182,7 +179,6 @@ export async function traceFlow(url: string, options: TraceFlowOptions): Promise
     };
   }
 
-  // Step 4: sign payment (we just reflect that the header was supplied)
   const signStart = now();
   steps.push({
     kind: 'sign-payment',
@@ -200,7 +196,6 @@ export async function traceFlow(url: string, options: TraceFlowOptions): Promise
     },
   });
 
-  // Step 5: paid request
   const paidReqStart = now();
   steps.push({
     kind: 'paid-request',
@@ -216,7 +211,6 @@ export async function traceFlow(url: string, options: TraceFlowOptions): Promise
     },
   });
 
-  // Step 6: paid response
   const paidResponse = await sendPaidRequest(
     url,
     { 'x-payment': options.paymentHeader },

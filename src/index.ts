@@ -113,7 +113,16 @@ function buildResult(
   };
 }
 
-export type { ScanOptions, ScanResult, RuleResult } from './types.js';
+export type {
+  ScanOptions,
+  ScanResult,
+  RuleResult,
+  Severity,
+  CategoryScore,
+  ScoreBreakdown,
+  ScoreCategory,
+  DiscoveryPayload,
+} from './types.js';
 export { traceFlow } from './scanner/flow.js';
 export type {
   FlowStep,

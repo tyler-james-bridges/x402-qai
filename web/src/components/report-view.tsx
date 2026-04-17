@@ -1,33 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import type { ScanResult } from '@/lib/types';
 import { ScoreRing } from './score-ring';
 import { CategoryBreakdown } from './category-breakdown';
 import { RuleList } from './rule-list';
 
-interface RuleResult {
-  id: string;
-  title: string;
-  severity: 'error' | 'warn' | 'info';
-  passed: boolean;
-  message: string;
-  suggestion?: string;
-}
-
-interface CategoryScore {
-  category: string;
-  score: number;
-  maxScore: number;
-}
-
-export interface ReportPayload {
-  url: string;
-  timestamp: string;
-  passed: boolean;
-  score: { total: number; categories: CategoryScore[] };
-  rules: RuleResult[];
-  errors: string[];
-}
+export type ReportPayload = ScanResult;
 
 interface ReportViewProps {
   hash: string;

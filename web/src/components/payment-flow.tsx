@@ -1,52 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { FlowStep, FlowStepKind, FlowStepStatus, FlowTrace } from '@/lib/types';
 
-export type FlowStepKind =
-  | 'discovery-request'
-  | 'discovery-response'
-  | 'parse-requirements'
-  | 'sign-payment'
-  | 'paid-request'
-  | 'paid-response';
-
-export type FlowStepStatus = 'success' | 'failure' | 'warning' | 'skipped';
-
-export interface FlowStep {
-  kind: FlowStepKind;
-  label: string;
-  status: FlowStepStatus;
-  startedAt: number;
-  durationMs: number;
-  summary: string;
-  detail?: Record<string, unknown>;
-}
-
-export interface FlowTrace {
-  url: string;
-  startedAt: string;
-  totalDurationMs: number;
-  paid: boolean;
-  succeeded: boolean;
-  steps: FlowStep[];
-  discovery: Record<string, unknown> | null;
-  errors: string[];
-}
+export type { FlowStep, FlowStepKind, FlowStepStatus, FlowTrace };
 
 interface PaymentFlowProps {
   trace: FlowTrace;
   autoPlay?: boolean;
   stepDelayMs?: number;
 }
-
-const STEP_LAYOUT: { kind: FlowStepKind; row: number; col: number }[] = [
-  { kind: 'discovery-request', row: 0, col: 0 },
-  { kind: 'discovery-response', row: 0, col: 1 },
-  { kind: 'parse-requirements', row: 0, col: 2 },
-  { kind: 'sign-payment', row: 1, col: 2 },
-  { kind: 'paid-request', row: 1, col: 1 },
-  { kind: 'paid-response', row: 1, col: 0 },
-];
 
 const STATUS_COLOR: Record<FlowStepStatus, string> = {
   success: 'border-green-500/60 bg-green-500/10 text-green-400',
@@ -61,6 +24,11 @@ const STATUS_DOT: Record<FlowStepStatus, string> = {
   warning: 'bg-yellow-500',
   skipped: 'bg-white/20',
 };
+
+// traceFlow always emits steps in this order. If that changes, the visual
+// flow layout (left-to-right, then wrap back right-to-left) breaks.
+const ROW_0: FlowStepKind[] = ['discovery-request', 'discovery-response', 'parse-requirements'];
+const ROW_1: FlowStepKind[] = ['paid-response', 'paid-request', 'sign-payment'];
 
 function StepNode({
   step,
@@ -106,21 +74,10 @@ function StepNode({
   );
 }
 
-function Connector({ active, direction }: { active: boolean; direction: 'right' | 'down' | 'left' }) {
-  const base = 'transition-all duration-500 ease-out';
+function Bar({ active, vertical = false }: { active: boolean; vertical?: boolean }) {
   const color = active ? 'bg-white/60' : 'bg-white/10';
-  if (direction === 'down') {
-    return (
-      <div className="flex justify-center">
-        <div className={`${base} ${color} w-[2px] h-8`} />
-      </div>
-    );
-  }
-  return (
-    <div className="flex items-center justify-center">
-      <div className={`${base} ${color} h-[2px] w-full`} />
-    </div>
-  );
+  const shape = vertical ? 'w-[2px] h-8 mx-auto' : 'h-[2px] w-full my-auto';
+  return <div className={`transition-colors duration-500 ${color} ${shape}`} />;
 }
 
 export function PaymentFlow({ trace, autoPlay = true, stepDelayMs = 450 }: PaymentFlowProps) {
@@ -130,43 +87,36 @@ export function PaymentFlow({ trace, autoPlay = true, stepDelayMs = 450 }: Payme
 
   useEffect(() => {
     if (!autoPlay) return;
-    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     let i = 0;
     const tick = () => {
-      if (cancelled) return;
       i += 1;
       setRevealedCount(i);
-      if (i < totalSteps) setTimeout(tick, stepDelayMs);
+      if (i < totalSteps) timer = setTimeout(tick, stepDelayMs);
     };
-    const initial = setTimeout(tick, stepDelayMs);
+    timer = setTimeout(tick, stepDelayMs);
     return () => {
-      cancelled = true;
-      clearTimeout(initial);
+      if (timer) clearTimeout(timer);
     };
   }, [autoPlay, stepDelayMs, totalSteps]);
 
-  const stepByKind = useMemo(() => {
-    const map = new Map<FlowStepKind, { step: FlowStep; index: number }>();
-    trace.steps.forEach((step, index) => map.set(step.kind, { step, index }));
-    return map;
-  }, [trace]);
-
-  const layoutCells = STEP_LAYOUT.map(({ kind }) => stepByKind.get(kind));
-
-  function renderCell(cell: { step: FlowStep; index: number } | undefined) {
-    if (!cell) return <div />;
+  function cellFor(kind: FlowStepKind) {
+    const index = trace.steps.findIndex((s) => s.kind === kind);
+    if (index < 0) return null;
+    const step = trace.steps[index];
     return (
       <StepNode
-        step={cell.step}
-        revealed={revealedCount > cell.index}
-        expanded={!!expanded[cell.index]}
-        onToggle={() => setExpanded((p) => ({ ...p, [cell.index]: !p[cell.index] }))}
+        step={step}
+        revealed={revealedCount > index}
+        expanded={!!expanded[index]}
+        onToggle={() => setExpanded((p) => ({ ...p, [index]: !p[index] }))}
       />
     );
   }
 
-  function connectorActive(cell: { step: FlowStep; index: number } | undefined) {
-    return !!cell && revealedCount > cell.index;
+  function barAfter(kind: FlowStepKind, vertical = false) {
+    const index = trace.steps.findIndex((s) => s.kind === kind);
+    return <Bar vertical={vertical} active={index >= 0 && revealedCount > index} />;
   }
 
   return (
@@ -183,31 +133,22 @@ export function PaymentFlow({ trace, autoPlay = true, stepDelayMs = 450 }: Payme
         </div>
       </div>
 
-      <div className="grid grid-cols-[1fr_24px_1fr_24px_1fr] gap-y-2 items-stretch">
-        {/* Row 0: req -> 402 -> parse */}
-        {renderCell(layoutCells[0])}
-        <Connector direction="right" active={connectorActive(layoutCells[1])} />
-        {renderCell(layoutCells[1])}
-        <Connector direction="right" active={connectorActive(layoutCells[2])} />
-        {renderCell(layoutCells[2])}
+      <div className="grid grid-cols-[1fr_24px_1fr_24px_1fr] items-stretch gap-y-2">
+        {cellFor(ROW_0[0])}
+        {barAfter(ROW_0[1])}
+        {cellFor(ROW_0[1])}
+        {barAfter(ROW_0[2])}
+        {cellFor(ROW_0[2])}
 
-        {/* Vertical connector between row 0 col 2 and row 1 col 2 */}
-        <div className="col-span-5">
-          <div className="grid grid-cols-[1fr_24px_1fr_24px_1fr]">
-            <div />
-            <div />
-            <div />
-            <div />
-            <Connector direction="down" active={connectorActive(layoutCells[3])} />
-          </div>
+        <div className="col-start-5">
+          {barAfter('sign-payment', true)}
         </div>
 
-        {/* Row 1: 200 <- retry <- sign */}
-        {renderCell(layoutCells[5])}
-        <Connector direction="left" active={connectorActive(layoutCells[4])} />
-        {renderCell(layoutCells[4])}
-        <Connector direction="left" active={connectorActive(layoutCells[3])} />
-        {renderCell(layoutCells[3])}
+        {cellFor(ROW_1[0])}
+        {barAfter(ROW_1[1])}
+        {cellFor(ROW_1[1])}
+        {barAfter(ROW_1[2])}
+        {cellFor(ROW_1[2])}
       </div>
 
       {trace.errors.length > 0 && (
