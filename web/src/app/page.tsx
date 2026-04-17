@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Scanner } from '@/components/scanner';
 
 export default function Home() {
@@ -11,6 +12,14 @@ export default function Home() {
           <p className="mt-3 text-lg text-white/60 font-mono">
             Test x402 endpoints before your users do.
           </p>
+          <nav className="mt-6 flex items-center justify-center gap-4 font-mono text-xs">
+            <Link href="/explore" className="rounded border border-white/20 bg-white/5 px-3 py-1.5 text-white/70 hover:border-white/40 hover:text-white transition-colors">
+              /explore
+            </Link>
+            <Link href="/flow" className="rounded border border-white/20 bg-white/5 px-3 py-1.5 text-white/70 hover:border-white/40 hover:text-white transition-colors">
+              /flow
+            </Link>
+          </nav>
         </header>
         <Scanner />
         <footer className="mt-16 border-t border-white/10 pt-8 text-center text-sm text-white/40 font-mono">

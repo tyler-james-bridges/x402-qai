@@ -114,3 +114,11 @@ function buildResult(
 }
 
 export type { ScanOptions, ScanResult, RuleResult } from './types.js';
+export { traceFlow } from './scanner/flow.js';
+export type {
+  FlowStep,
+  FlowStepKind,
+  FlowStepStatus,
+  FlowTrace,
+  TraceFlowOptions,
+} from './scanner/flow.js';

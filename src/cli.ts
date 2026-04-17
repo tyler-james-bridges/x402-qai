@@ -7,7 +7,10 @@ import { scanBatch } from './batch.js';
 import { formatText, formatBatchTextReport } from './reporters/text.js';
 import { formatJson, formatBatchJsonReport } from './reporters/json.js';
 import { startWatch, formatWatchResult } from './watch.js';
-import type { ScanOptions, ReportFormat } from './types.js';
+import { uploadReport } from './scanner/report-upload.js';
+import type { ScanOptions, ReportFormat, ScanResult } from './types.js';
+
+const DEFAULT_REPORT_ENDPOINT = 'https://qai.0x402.sh/api/report';
 
 const program = new Command();
 
@@ -25,6 +28,10 @@ program
   .option('--timeout <ms>', 'request timeout in milliseconds', '10000')
   .option('--watch <seconds>', 'watch mode: re-scan every N seconds (single URL only)')
   .option('--lint', 'run x402-lint before the endpoint scan', false)
+  .option(
+    '--report-url [endpoint]',
+    `upload the scan result and print the shareable URL (default: ${DEFAULT_REPORT_ENDPOINT})`,
+  )
   .action(async (url: string | undefined, opts: Record<string, unknown>) => {
     const urls = collectUrls(url, opts.file as string | undefined);
 
@@ -94,6 +101,10 @@ program
         const output = format === 'json' ? formatJson(result, startTime) : formatText(result);
         console.log(output);
 
+        if (opts.reportUrl !== undefined) {
+          await tryUploadReport(result, opts.reportUrl);
+        }
+
         if (threshold !== undefined && result.score.total < threshold) {
           process.exit(1);
         } else if (!result.passed) {
@@ -106,6 +117,21 @@ program
       }
     }
   });
+
+async function tryUploadReport(result: ScanResult, raw: unknown): Promise<void> {
+  const endpoint =
+    typeof raw === 'string' && raw.length > 0 && raw !== 'true' ? raw : DEFAULT_REPORT_ENDPOINT;
+  try {
+    const response = await uploadReport(result, endpoint);
+    console.error(`Report uploaded: ${response.reportUrl}`);
+    if (response.badgeUrl) {
+      console.error(`Badge:          ${response.badgeUrl}`);
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`Report upload failed: ${msg}`);
+  }
+}
 
 function collectUrls(positional: string | undefined, filePath: string | undefined): string[] {
   const urls: string[] = [];
