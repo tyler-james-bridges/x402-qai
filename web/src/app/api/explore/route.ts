@@ -27,29 +27,17 @@ export interface Service {
 
 const BANKR_API = 'https://api.bankr.bot';
 
-const DEFAULT_QUERIES = [
-  'api',
-  'data',
-  'ai',
-  'search',
-  'trading',
-  'social',
-  'image',
-  'crypto',
-  'agent',
-  'tool',
-  'defi',
-  'nft',
-];
-
-async function searchBankr(query: string): Promise<Service[]> {
-  const params = new URLSearchParams({ q: query, limit: '10' });
+async function searchBankr(query: string, limit: number = 200): Promise<Service[]> {
+  const params = new URLSearchParams({ q: query, limit: String(limit) });
   try {
     const res = await fetch(`${BANKR_API}/x402/endpoints/discover?${params}`, {
       signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return [];
-    const data = await res.json() as { success?: boolean; services?: Service[] };
+    const data = (await res.json()) as {
+      success?: boolean;
+      services?: Service[];
+    };
     if (!data.success || !Array.isArray(data.services)) return [];
     return data.services.filter(
       (item): item is Service =>
@@ -66,22 +54,8 @@ export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get('q')?.trim() ?? '';
 
   try {
-    if (q) {
-      const services = await searchBankr(q);
-      return NextResponse.json({ query: q, services });
-    }
-
-    const results = await Promise.all(DEFAULT_QUERIES.map((query) => searchBankr(query)));
-    const seen = new Set<string>();
-    const merged: Service[] = [];
-    for (const group of results) {
-      for (const svc of group) {
-        if (seen.has(svc.slug)) continue;
-        seen.add(svc.slug);
-        merged.push(svc);
-      }
-    }
-    return NextResponse.json({ query: '', services: merged });
+    const services = await searchBankr(q, q ? 50 : 200);
+    return NextResponse.json({ query: q, services });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Explore failed';
     return NextResponse.json({ error: message }, { status: 500 });
