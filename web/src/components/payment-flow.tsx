@@ -216,7 +216,7 @@ export function PaymentFlow() {
           disabled={loading}
           className="rounded-lg bg-white px-6 py-3 font-mono text-sm font-bold text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {loading ? 'Running...' : 'Visualize'}
+          {loading ? 'Running...' : 'Run Flow'}
         </button>
       </form>
 
