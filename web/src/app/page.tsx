@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Scanner } from '@/components/scanner';
 
 export default function Home() {
@@ -10,6 +11,20 @@ export default function Home() {
           </h1>
           <p className="mt-3 text-lg text-white/60 font-mono">
             Test x402 endpoints before your users do.
+          </p>
+          <p className="mt-4 flex items-center justify-center gap-4 text-xs text-white/40 font-mono">
+            <Link
+              href="/explore"
+              className="text-white/60 hover:text-white transition-colors underline"
+            >
+              endpoint explorer &rarr;
+            </Link>
+            <Link
+              href="/flow"
+              className="text-white/60 hover:text-white transition-colors underline"
+            >
+              flow visualizer &rarr;
+            </Link>
           </p>
         </header>
         <Scanner />
@@ -34,6 +49,22 @@ export default function Home() {
             >
               npm install -g x402-qai
             </a>
+          </p>
+          <p className="mt-2">
+            <Link
+              href="/flow"
+              className="text-white/60 hover:text-white transition-colors underline"
+            >
+              /flow - payment handshake visualizer
+            </Link>
+          </p>
+          <p className="mt-2">
+            <Link
+              href="/explore"
+              className="text-white/60 hover:text-white transition-colors underline"
+            >
+              /explore - x402 endpoint catalog
+            </Link>
           </p>
         </footer>
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScoreRing } from './score-ring';
 import { RuleList } from './rule-list';
 import { CategoryBreakdown } from './category-breakdown';
@@ -38,6 +38,12 @@ export function Scanner() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const prefill = params.get('url');
+    if (prefill) setUrl(prefill);
+  }, []);
 
   async function handleScan(e: React.FormEvent) {
     e.preventDefault();
