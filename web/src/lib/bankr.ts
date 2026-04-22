@@ -15,10 +15,15 @@ export async function searchBankr(query: string, limit: number): Promise<Service
       services?: Service[];
     };
     if (!data.success || !Array.isArray(data.services)) return [];
-    return data.services.filter(
-      (item): item is Service =>
-        !!item && typeof item === 'object' && typeof item.slug === 'string',
-    );
+    return data.services
+      .filter(
+        (item): item is Service =>
+          !!item && typeof item === 'object' && typeof item.slug === 'string',
+      )
+      .map((svc) => ({
+        ...svc,
+        url: svc.url || `https://x402.bankr.bot/${svc.slug}`,
+      }));
   } catch {
     return [];
   }
