@@ -31,7 +31,12 @@ export function EndpointCard({ service }: { service: Service }) {
   return (
     <div className="flex flex-col rounded-lg border border-white/10 bg-white/5 p-4 font-mono transition-colors hover:border-white/20">
       <div className="flex items-start justify-between gap-3 mb-2">
-        <h3 className="text-sm font-bold text-white break-all">{service.name}</h3>
+        <Link
+          href={`/explore/${service.slug}`}
+          className="text-sm font-bold text-white break-all hover:underline"
+        >
+          {service.name}
+        </Link>
         <span className="shrink-0 text-[10px] uppercase tracking-wider text-white/50">
           {methodsLabel(service)}
         </span>
@@ -81,6 +86,12 @@ export function EndpointCard({ service }: { service: Service }) {
           {url}
         </a>
         <div className="flex gap-2">
+          <Link
+            href={`/explore/${service.slug}`}
+            className="flex-1 rounded border border-white/20 bg-white/10 px-3 py-1.5 text-center text-[11px] font-bold text-white hover:bg-white/20 transition-colors"
+          >
+            Details
+          </Link>
           <Link
             href={`/?url=${encoded}`}
             className="flex-1 rounded border border-white/20 bg-white/10 px-3 py-1.5 text-center text-[11px] font-bold text-white hover:bg-white/20 transition-colors"
