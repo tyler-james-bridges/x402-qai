@@ -26,6 +26,12 @@ export default function FlowPage() {
               >
                 /explore
               </Link>
+              <Link
+                href="/workflows"
+                className="text-white/40 hover:text-white/70 transition-colors"
+              >
+                /workflows
+              </Link>
               <span className="text-white/30">0x402.sh</span>
             </div>
           </div>

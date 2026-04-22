@@ -12,7 +12,7 @@ export default function Home() {
           <p className="mt-3 text-lg text-white/60 font-mono">
             Test x402 endpoints before your users do.
           </p>
-          <p className="mt-4 flex items-center justify-center gap-4 text-xs text-white/40 font-mono">
+          <p className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-white/40 font-mono">
             <Link
               href="/explore"
               className="text-white/60 hover:text-white transition-colors underline"
@@ -24,6 +24,12 @@ export default function Home() {
               className="text-white/60 hover:text-white transition-colors underline"
             >
               flow visualizer &rarr;
+            </Link>
+            <Link
+              href="/workflows"
+              className="text-white/60 hover:text-white transition-colors underline"
+            >
+              workflow runner &rarr;
             </Link>
           </p>
         </header>
@@ -64,6 +70,14 @@ export default function Home() {
               className="text-white/60 hover:text-white transition-colors underline"
             >
               /explore - x402 endpoint catalog
+            </Link>
+          </p>
+          <p className="mt-2">
+            <Link
+              href="/workflows"
+              className="text-white/60 hover:text-white transition-colors underline"
+            >
+              /workflows - multi-step pipeline runner
             </Link>
           </p>
         </footer>
