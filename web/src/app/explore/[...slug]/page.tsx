@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 import type { Service, ServiceRoute } from '@/app/api/explore/route';
 import { findServiceBySlug } from '@/lib/bankr';
 import { CopyButton } from '@/components/copy-button';
+import { BadgeEmbed } from '@/components/badge-embed';
 
 interface DetailProps {
   params: Promise<{ slug: string[] }>;
@@ -51,6 +53,11 @@ export default async function EndpointDetailPage({ params }: DetailProps) {
   const encoded = encodeURIComponent(service.url);
   const method = firstMethod(primary);
   const schemas = collectSchemas(service);
+
+  const h = await headers();
+  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'qai.0x402.sh';
+  const proto = h.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https');
+  const origin = `${proto}://${host}`;
 
   return (
     <main className="min-h-screen bg-black text-white">
@@ -222,6 +229,10 @@ export default async function EndpointDetailPage({ params }: DetailProps) {
             </div>
           </section>
         )}
+
+        <section className="mb-8">
+          <BadgeEmbed encoded={encoded} origin={origin} />
+        </section>
 
         <footer className="mt-16 border-t border-white/10 pt-8 text-center text-sm text-white/40 font-mono">
           <p>

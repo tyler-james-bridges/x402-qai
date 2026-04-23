@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { ScoreRing } from './score-ring';
 import { RuleList } from './rule-list';
 import { CategoryBreakdown } from './category-breakdown';
+import { BadgeEmbed } from './badge-embed';
 
 interface RuleResult {
   id: string;
@@ -38,6 +40,11 @@ export function Scanner() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [origin, setOrigin] = useState('');
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -75,6 +82,8 @@ export function Scanner() {
     }
   }
 
+  const encoded = useMemo(() => (result ? encodeURIComponent(result.url) : ''), [result]);
+
   return (
     <div>
       <form onSubmit={handleScan} className="flex gap-3">
@@ -108,9 +117,7 @@ export function Scanner() {
               <p className="text-sm text-white/40 font-mono">
                 {new Date(result.timestamp).toLocaleString()}
               </p>
-              <p className="mt-1 text-sm text-white/60 font-mono break-all">
-                {result.url}
-              </p>
+              <p className="mt-1 text-sm text-white/60 font-mono break-all">{result.url}</p>
             </div>
             <ScoreRing score={result.score.total} passed={result.passed} />
           </div>
@@ -130,6 +137,18 @@ export function Scanner() {
 
           <CategoryBreakdown categories={result.score.categories} />
           <RuleList rules={result.rules} />
+
+          {origin && encoded && (
+            <div className="space-y-4">
+              <Link
+                href={`/report/${encoded}`}
+                className="inline-block rounded border border-white/20 bg-white/10 px-4 py-2 text-xs font-mono text-white hover:bg-white/20 transition-colors"
+              >
+                Share Report &rarr;
+              </Link>
+              <BadgeEmbed encoded={encoded} origin={origin} />
+            </div>
+          )}
         </div>
       )}
     </div>
