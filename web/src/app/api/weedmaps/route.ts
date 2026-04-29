@@ -119,12 +119,22 @@ async function findDispensaries(
 
 async function fetchMenu(wmid: number): Promise<WmMenuItem[]> {
   try {
-    const res = await fetch(`${WEEDMAPS_MENU}/${wmid}/menu_items?page_size=20`, {
+    const url = `${WEEDMAPS_MENU}/${wmid}/menu_items?page_size=20`;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; x402-qai/1.0)',
+        Accept: 'application/json',
+      },
       signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return [];
-    const data = (await res.json()) as { data?: WmMenuItem[] };
-    return data.data ?? [];
+    const raw = await res.text();
+    try {
+      const data = JSON.parse(raw) as { data?: WmMenuItem[] };
+      return data.data ?? [];
+    } catch {
+      return [];
+    }
   } catch {
     return [];
   }
@@ -287,10 +297,17 @@ export async function POST(req: NextRequest) {
 
     const top = dispensaries.slice(0, 5);
     const results = [];
+    const debug: Array<{ name: string; wmid: number; menuCount: number; filteredCount: number }> = [];
 
     for (const disp of top) {
       const menuItems = await fetchMenu(disp.wmid);
       const filtered = filterProducts(menuItems, query);
+      debug.push({
+        name: disp.name,
+        wmid: disp.wmid,
+        menuCount: menuItems.length,
+        filteredCount: filtered.length,
+      });
       const recs = filtered.slice(0, 5).map((item) => ({
         name: item.attributes.name,
         category: item.attributes.category_name,
@@ -338,6 +355,7 @@ export async function POST(req: NextRequest) {
       },
       dispensaries: results,
       summary,
+      _debug: debug,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Request failed';
