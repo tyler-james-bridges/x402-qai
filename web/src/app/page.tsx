@@ -33,6 +33,14 @@ const tools = [
     cta: 'Find dispensaries',
     stats: 'Live menus',
   },
+  {
+    href: '/night-out',
+    title: 'Night Out',
+    description:
+      'Multi-source local discovery. Dispensaries, restaurants, bars, and breweries in one search.',
+    cta: 'Plan a night',
+    stats: '4 sources',
+  },
 ];
 
 const endpoints = [
@@ -43,6 +51,7 @@ const endpoints = [
   { name: 'preflight', price: '$0.005', description: 'Pre-payment validation' },
   { name: 'trust', price: '$0.001', description: 'Endpoint trust check' },
   { name: 'weedmaps-recs', price: '$0.03', description: 'Dispensary finder + product recs' },
+  { name: 'night-out', price: '$0.05', description: 'Multi-source night out planner' },
 ];
 
 export default function Home() {
