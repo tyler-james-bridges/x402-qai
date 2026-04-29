@@ -25,6 +25,14 @@ const tools = [
     cta: 'View workflows',
     stats: '5 templates',
   },
+  {
+    href: '/weedmaps',
+    title: 'Dispensary Finder',
+    description:
+      'Search nearby dispensaries and get product recommendations by preference. US locations.',
+    cta: 'Find dispensaries',
+    stats: 'Live menus',
+  },
 ];
 
 const endpoints = [
@@ -34,6 +42,7 @@ const endpoints = [
   { name: 'workflow-estimate', price: '$0.005', description: 'Cost estimate for pipelines' },
   { name: 'preflight', price: '$0.005', description: 'Pre-payment validation' },
   { name: 'trust', price: '$0.001', description: 'Endpoint trust check' },
+  { name: 'weedmaps-recs', price: '$0.03', description: 'Dispensary finder + product recs' },
 ];
 
 export default function Home() {
@@ -62,7 +71,7 @@ export default function Home() {
       {/* Tools Grid */}
       <section className="mx-auto max-w-5xl px-4 pb-16">
         <h2 className="text-sm font-mono uppercase tracking-wider text-white/40 mb-6">Tools</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {tools.map((tool) => (
             <Link
               key={tool.href}
