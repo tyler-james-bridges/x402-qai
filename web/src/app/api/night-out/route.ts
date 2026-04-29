@@ -122,8 +122,15 @@ async function fetchDispensaries(lat: number, lng: number, radius: string) {
         if (menuRes.ok) {
           const menuData = (await menuRes.json()) as { data?: WmMenuItem[] };
           const items = menuData.data ?? [];
-          if (items.length > 0) {
-            const item = items[0];
+          const cannabis = items.filter(
+            (i) =>
+              !['gear', 'accessories', 'apparel'].includes(
+                i.attributes.category_name?.toLowerCase() ?? '',
+              ),
+          );
+          const best = cannabis.length > 0 ? cannabis : items;
+          if (best.length > 0) {
+            const item = best[0];
             topPick = {
               name: item.attributes.name,
               category: item.attributes.category_name,
