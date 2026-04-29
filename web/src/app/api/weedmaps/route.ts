@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const WEEDMAPS_DISCOVERY = 'https://api-g.weedmaps.com/discovery/v2/listings';
-const WEEDMAPS_MENU = 'https://weedmaps.com/api/v1/listings';
+const WEEDMAPS_MENU = 'https://api-g.weedmaps.com/wm/v1/listings';
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
 
 interface GeoResult {
@@ -121,20 +121,11 @@ async function fetchMenu(wmid: number): Promise<WmMenuItem[]> {
   try {
     const url = `${WEEDMAPS_MENU}/${wmid}/menu_items?page_size=20`;
     const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; x402-qai/1.0)',
-        Accept: 'application/json',
-      },
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return [];
-    const raw = await res.text();
-    try {
-      const data = JSON.parse(raw) as { data?: WmMenuItem[] };
-      return data.data ?? [];
-    } catch {
-      return [];
-    }
+    const data = (await res.json()) as { data?: WmMenuItem[] };
+    return data.data ?? [];
   } catch {
     return [];
   }
@@ -297,17 +288,9 @@ export async function POST(req: NextRequest) {
 
     const top = dispensaries.slice(0, 5);
     const results = [];
-    const debug: Array<{ name: string; wmid: number; menuCount: number; filteredCount: number }> = [];
-
     for (const disp of top) {
       const menuItems = await fetchMenu(disp.wmid);
       const filtered = filterProducts(menuItems, query);
-      debug.push({
-        name: disp.name,
-        wmid: disp.wmid,
-        menuCount: menuItems.length,
-        filteredCount: filtered.length,
-      });
       const recs = filtered.slice(0, 5).map((item) => ({
         name: item.attributes.name,
         category: item.attributes.category_name,
@@ -355,7 +338,6 @@ export async function POST(req: NextRequest) {
       },
       dispensaries: results,
       summary,
-      _debug: debug,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Request failed';
