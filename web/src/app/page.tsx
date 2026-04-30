@@ -25,6 +25,9 @@ const tools = [
     cta: 'View workflows',
     stats: '5 templates',
   },
+];
+
+const cannabisTools = [
   {
     href: '/weedmaps',
     title: 'Dispensary Finder',
@@ -41,17 +44,47 @@ const tools = [
     cta: 'Plan a night',
     stats: '4 sources',
   },
+  {
+    href: '/strain-finder',
+    title: 'Strain Finder',
+    description:
+      'Find a specific strain across nearby menus. Sorted by cheapest match across dispensaries.',
+    cta: 'Find a strain',
+    stats: 'Cheapest first',
+  },
+  {
+    href: '/price-compare',
+    title: 'Price Compare',
+    description:
+      'Compare prices for any cannabis category across nearby dispensaries. Filter by genetics, unit.',
+    cta: 'Compare prices',
+    stats: 'Min / avg / max',
+  },
+  {
+    href: '/deal-scout',
+    title: 'Deal Scout',
+    description:
+      'Find dispensaries with active promotions. Optional category filter on the menu preview.',
+    cta: 'Find deals',
+    stats: 'Active sales',
+  },
 ];
 
-const endpoints = [
+const devtoolsEndpoints = [
   { name: 'lint', price: '$0.01', description: 'Full compliance scan with grade' },
   { name: 'health', price: '$0.001', description: 'Quick alive + 402 check' },
   { name: 'explore', price: '$0.005', description: 'Search x402 marketplace' },
   { name: 'workflow-estimate', price: '$0.005', description: 'Cost estimate for pipelines' },
   { name: 'preflight', price: '$0.005', description: 'Pre-payment validation' },
   { name: 'trust', price: '$0.001', description: 'Endpoint trust check' },
+];
+
+const cannabisEndpoints = [
   { name: 'weedmaps-recs', price: '$0.03', description: 'Dispensary finder + product recs' },
   { name: 'night-out', price: '$0.05', description: 'Multi-source night out planner' },
+  { name: 'strain-finder', price: '$0.02', description: 'Find a strain across nearby menus' },
+  { name: 'price-compare', price: '$0.02', description: 'Compare category prices nearby' },
+  { name: 'deal-scout', price: '$0.02', description: 'Find dispensaries with active deals' },
 ];
 
 export default function Home() {
@@ -80,28 +113,19 @@ export default function Home() {
       {/* Tools Grid */}
       <section className="mx-auto max-w-5xl px-4 pb-16">
         <h2 className="text-sm font-mono uppercase tracking-wider text-white/40 mb-6">Tools</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {tools.map((tool) => (
-            <Link
-              key={tool.href}
-              href={tool.href}
-              className="group rounded-xl border border-white/10 bg-white/[0.02] p-6 transition-all hover:border-white/25 hover:bg-white/[0.04]"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="text-lg font-bold font-mono text-white group-hover:text-white/90">
-                  {tool.title}
-                </h3>
-                <span className="text-[10px] font-mono text-white/30 uppercase tracking-wider shrink-0 ml-2 mt-1">
-                  {tool.stats}
-                </span>
-              </div>
-              <p className="text-sm text-white/50 font-mono leading-relaxed mb-4">
-                {tool.description}
-              </p>
-              <span className="text-xs font-mono text-white/60 group-hover:text-white/80 transition-colors">
-                {tool.cta} &rarr;
-              </span>
-            </Link>
+            <ToolCard key={tool.href} tool={tool} />
+          ))}
+        </div>
+      </section>
+
+      {/* Cannabis Tools Grid */}
+      <section className="mx-auto max-w-5xl px-4 pb-16">
+        <h2 className="text-sm font-mono uppercase tracking-wider text-white/40 mb-6">Cannabis</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {cannabisTools.map((tool) => (
+            <ToolCard key={tool.href} tool={tool} />
           ))}
         </div>
       </section>
@@ -120,20 +144,25 @@ export default function Home() {
           <p className="text-sm text-white/50 font-mono mb-6">
             All tools available as x402 endpoints. No API keys. Pay per request with your wallet.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {endpoints.map((ep) => (
-              <div
-                key={ep.name}
-                className="rounded-lg border border-white/5 bg-white/[0.02] px-4 py-3 font-mono"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm text-white/80 font-bold">{ep.name}</span>
-                  <span className="text-[11px] text-green-400">{ep.price}</span>
-                </div>
-                <p className="text-[11px] text-white/40">{ep.description}</p>
-              </div>
+
+          <h3 className="text-[11px] font-mono uppercase tracking-wider text-white/30 mb-3">
+            DevTools
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+            {devtoolsEndpoints.map((ep) => (
+              <EndpointCard key={ep.name} ep={ep} />
             ))}
           </div>
+
+          <h3 className="text-[11px] font-mono uppercase tracking-wider text-white/30 mb-3">
+            Cannabis
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {cannabisEndpoints.map((ep) => (
+              <EndpointCard key={ep.name} ep={ep} />
+            ))}
+          </div>
+
           <div className="mt-4 pt-4 border-t border-white/5">
             <code className="text-[11px] text-white/30 font-mono break-all">
               bankr x402 call https://x402.bankr.bot/0x72e45a.../lint -i
@@ -213,5 +242,53 @@ export default function Home() {
         </div>
       </footer>
     </main>
+  );
+}
+
+interface Tool {
+  href: string;
+  title: string;
+  description: string;
+  cta: string;
+  stats: string;
+}
+
+function ToolCard({ tool }: { tool: Tool }) {
+  return (
+    <Link
+      href={tool.href}
+      className="group rounded-xl border border-white/10 bg-white/[0.02] p-6 transition-all hover:border-white/25 hover:bg-white/[0.04]"
+    >
+      <div className="flex items-start justify-between mb-3">
+        <h3 className="text-lg font-bold font-mono text-white group-hover:text-white/90">
+          {tool.title}
+        </h3>
+        <span className="text-[10px] font-mono text-white/30 uppercase tracking-wider shrink-0 ml-2 mt-1">
+          {tool.stats}
+        </span>
+      </div>
+      <p className="text-sm text-white/50 font-mono leading-relaxed mb-4">{tool.description}</p>
+      <span className="text-xs font-mono text-white/60 group-hover:text-white/80 transition-colors">
+        {tool.cta} &rarr;
+      </span>
+    </Link>
+  );
+}
+
+interface Endpoint {
+  name: string;
+  price: string;
+  description: string;
+}
+
+function EndpointCard({ ep }: { ep: Endpoint }) {
+  return (
+    <div className="rounded-lg border border-white/5 bg-white/[0.02] px-4 py-3 font-mono">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-sm text-white/80 font-bold">{ep.name}</span>
+        <span className="text-[11px] text-green-400">{ep.price}</span>
+      </div>
+      <p className="text-[11px] text-white/40">{ep.description}</p>
+    </div>
   );
 }
