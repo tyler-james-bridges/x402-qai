@@ -16,10 +16,22 @@ export function createApp() {
 
   if (sellerWallet) {
     const loadMiddleware = async () => {
-      const { paymentMiddlewareFromConfig } = await import('@x402/hono');
+      const { paymentMiddleware, x402ResourceServer } = await import('@x402/hono');
+      const { HTTPFacilitatorClient } = await import('@x402/core/server');
+      const { ExactEvmScheme } = await import('@x402/evm/exact/server');
+      const { builderCodeResourceServerExtension } = await import(
+        '@x402/extensions/builder-code'
+      );
       const { buildRoutes } = await import('./x402Config.js');
       const routes = buildRoutes(sellerWallet as `0x${string}`);
-      return paymentMiddlewareFromConfig(routes);
+      const facilitatorUrl =
+        process.env.FACILITATOR_URL || 'https://x402.org/facilitator';
+      const server = new x402ResourceServer(
+        new HTTPFacilitatorClient({ url: facilitatorUrl }),
+      )
+        .register('eip155:8453', new ExactEvmScheme())
+        .registerExtension(builderCodeResourceServerExtension);
+      return paymentMiddleware(routes, server);
     };
 
     const middlewarePromise = loadMiddleware();
